@@ -4,12 +4,6 @@
 
 [GD 音乐台插件：安装与使用说明](https://github.com/Morpheus799/gdstudio-repo#readme)
 
-<p align="center"><a href="https://github.com/any-listen/any-listen"><img height="110" src="./images/header-logo.svg" alt="any-listen logo"></a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="https://github.com/any-listen/any-listen"><img height="86" src="./images/header-name.svg" alt="any-listen name"></a></p>
-
-<p align="center">一款跨平台的私人音樂播放服務</p>
-
-<br />
-
 [English](../README.md) | [简体中文](README_zh.md) | **繁體中文**
 
 專案仍在積極開發中，目前提供 **桌面版** 與 **網頁版服務**。

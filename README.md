@@ -6,6 +6,7 @@ A customized desktop music player based on [Any Listen](https://github.com/any-l
 
 - [Download Windows x64 installer](https://github.com/xxxbaiovo/open-listen/releases/latest)
 - [Release and update guide](docs/OPEN_LISTEN_RELEASE.md)
+- 首次启动默认使用深色模式（午夜绿）；后续启动保留你选择的主题。
 - Original license and attribution are retained. This version is maintained independently of the original authors.
 
 ## GD 音乐台插件
@@ -15,12 +16,6 @@ A customized desktop music player based on [Any Listen](https://github.com/any-l
 这是第三方插件，由其作者独立维护。安装与更新请参考插件仓库说明。
 
 ---
-
-<p align="center"><a href="https://github.com/any-listen/any-listen"><img height="110" src="./docs/images/header-logo.svg" alt="any-listen logo"></a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="https://github.com/any-listen/any-listen"><img height="86" src="./docs/images/header-name.svg" alt="any-listen name"></a></p>
-
-<p align="center">A cross-platform private music playback service</p>
-
-<br />
 
 **English** | [简体中文](./docs/README_zh.md) | [繁體中文](./docs/README_zh-tw.md)
 
