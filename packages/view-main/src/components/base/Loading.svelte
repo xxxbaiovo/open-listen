@@ -18,14 +18,16 @@
 </script>
 
 {#if loading}
-  <div class="loading" in:fade={{ delay: 800, duration: 200 }} out:fade={{ duration: 200 }}>
-    <p class="content">{$t('list_loading')}</p>
+  <div class="loading" in:fade={{ delay: 150, duration: 150 }} out:fade={{ duration: 200 }}>
+    <div class="content" role="status" aria-label={$t('list_loading')}>
+      <span class="spinner" aria-hidden="true"></span>
+    </div>
   </div>
 {/if}
-{#if error}
+{#if error && !loading}
   <div class="error" transition:fade={{ duration: 200 }}>
     <div class="content">
-      <p>{errorMessage ? $t('list_error_message', { msg: errorMessage }) : $t('list_error')}</p>
+      <p role="status">{errorMessage ? $t('list_error_message', { msg: errorMessage }) : $t('list_error')}</p>
       <p>
         {#if onreload}
           <Btn
@@ -54,7 +56,7 @@
     justify-content: center;
     width: 100%;
     height: 100%;
-    font-size: 18px;
+    font-size: 14px;
 
     &::before {
       position: absolute;
@@ -74,5 +76,20 @@
     flex-direction: column;
     gap: 15px;
     align-items: center;
+  }
+  .spinner {
+    width: 28px;
+    height: 28px;
+    box-sizing: border-box;
+    border: 2px solid color-mix(in srgb, var(--color-font) 15%, transparent);
+    border-top-color: var(--color-font);
+    border-radius: 50%;
+    animation: loading-spin 800ms linear infinite;
+  }
+  @keyframes loading-spin {
+    to { transform: rotate(360deg); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .spinner { animation: none; }
   }
 </style>
