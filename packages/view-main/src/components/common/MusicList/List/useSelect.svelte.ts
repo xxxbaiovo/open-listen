@@ -1,59 +1,24 @@
-export const useSelect = (props: { isShiftDown: boolean; list: AnyListen.Music.MusicInfo[] }) => {
+export const useSelect = (props: { list: AnyListen.Music.MusicInfo[] }) => {
   let selectedList: AnyListen.Music.MusicInfo[] = $state.raw([])
-  let selectIndex = $state(0)
-
+  let selectIndex = $state(-1)
   return {
-    get list() {
-      return selectedList
-    },
-    get selectIndex() {
-      return selectIndex
-    },
-    clearSelect() {
-      selectedList = []
-    },
-    setSelectIndex(idx: number) {
-      selectIndex = idx
-    },
-    override(list: AnyListen.Music.MusicInfo[]) {
-      selectedList = list
-    },
-    addOrRemove(info: AnyListen.Music.MusicInfo) {
-      let idx = selectedList.indexOf(info)
-      if (idx < 0) {
-        selectedList = [...selectedList, info]
+    get list() { return selectedList },
+    get selectIndex() { return selectIndex },
+    clearSelect() { selectedList = []; selectIndex = -1 },
+    setSelectIndex(idx: number) { selectIndex = idx },
+    override(list: AnyListen.Music.MusicInfo[]) { selectedList = list },
+    handleSelect(index: number, modifiers: { shiftKey?: boolean; ctrlKey?: boolean; metaKey?: boolean } = {}) {
+      const item = props.list[index]
+      if (!item) return
+      const additive = modifiers.ctrlKey || modifiers.metaKey
+      if (modifiers.shiftKey && selectIndex >= 0) {
+        const range = props.list.slice(Math.min(selectIndex, index), Math.max(selectIndex, index) + 1)
+        selectedList = additive ? props.list.filter((song) => selectedList.includes(song) || range.includes(song)) : range
       } else {
-        selectedList.splice(idx, 1)
-        selectedList = [...selectedList]
-      }
-    },
-    handleSelect(clickIndex: number) {
-      let list = props.list
-      if (props.isShiftDown) {
-        if (selectIndex < 0) {
-          selectIndex = clickIndex
-          this.addOrRemove(list[clickIndex])
-        } else {
-          if (selectIndex == clickIndex) {
-            selectedList = [list[clickIndex]]
-          } else {
-            if (selectedList.length) selectedList = []
-            let _selectIndex = selectIndex
-            let isNeedReverse = false
-            if (clickIndex < _selectIndex) {
-              let temp = _selectIndex
-              _selectIndex = clickIndex
-              clickIndex = temp
-              isNeedReverse = true
-            }
-            let newSelectList = list.slice(_selectIndex, clickIndex + 1)
-            if (isNeedReverse) newSelectList.reverse()
-            selectedList = newSelectList
-          }
-        }
-      } else {
-        selectIndex = clickIndex
-        this.addOrRemove(list[clickIndex])
+        selectIndex = index
+        selectedList = additive
+          ? props.list.filter((song) => song === item ? !selectedList.includes(song) : selectedList.includes(song))
+          : [item]
       }
     },
   }

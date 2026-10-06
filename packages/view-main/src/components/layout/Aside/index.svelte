@@ -1,53 +1,57 @@
-<script>
-  import Logo from './Logo.svelte'
+<script lang="ts">
   import Nav from './Nav.svelte'
+  import { t } from '@/plugins/i18n'
   import MyList from './MyList/index.svelte'
-  // import { useSettingValue } from '@/modules/setting/reactive.svelte'
-  // export let params = {}
-
-  // console.log(params)
+  let { onnavigate }: { onnavigate: () => void } = $props()
+  const closeOnNavigation = (node: HTMLElement) => {
+    const handle = (event: Event) => {
+      if (event instanceof KeyboardEvent && !['Enter', ' '].includes(event.key)) return
+      if (event.target instanceof Element && event.target.closest('a, .list-item [role="button"]')) onnavigate()
+    }
+    node.addEventListener('click', handle, true)
+    node.addEventListener('keydown', handle, true)
+    return () => {
+      node.removeEventListener('click', handle, true)
+      node.removeEventListener('keydown', handle, true)
+    }
+  }
 </script>
 
-<div class="aside">
-  {#if import.meta.env.VITE_IS_MAC}
-    <div class="drag-no-any-modal" style="padding-top: calc(env(titlebar-area-height, 30px) + 4px)"></div>
-  {/if}
-  {#if !import.meta.env.VITE_IS_MAC}
-    <Logo />
-  {/if}
-  <Nav />
-  <MyList />
-</div>
+<aside class="aside" aria-label={$t('ui.library')} {@attach closeOnNavigation}>
+  <MyList /><Nav />
+</aside>
 
 <style lang="less">
   .aside {
-    // background-color: var(--color-primary-light-900-alpha-900);
     display: flex;
     flex: none;
-    flex-flow: column nowrap;
-    width: 20%;
-    max-width: 320px;
-    // box-shadow: 0 0 5px rgba(0, 0, 0, .3);
-    // transition: @transition-normal;
-    // transition-property: background-color;
-    // background-color: @color-theme-sidebar;
-    // background-color: @color-aside-background;
-    // border-right: 2px solid var(--color-primary);
-    // -webkit-user-select: none;
-    background-color: var(--color-app-background);
-
-    // &.fullscreen {
-    //   .logo {
-    //     display: none;
-    //   }
-    // }
-    // TODO: 兼容MAC
-    // :global(.aside-logo + .aside-nav) {
-    //   padding-top: 20px;
-    // }
+    flex-direction: column;
+    width: 22%;
+    min-width: 230px;
+    max-width: 300px;
+    min-height: 0;
+    padding: 10px 0;
+    overflow: hidden;
+    background: var(--color-content-background);
+    border-radius: 8px;
   }
-
-  // :global(html.mac .aside-nav) {
-  //   padding-top: env(titlebar-area-height, 30px);
-  // }
+  .aside :global(.aside-nav) {
+    gap: 2px;
+    padding: 12px 12px 0;
+    margin-top: 8px;
+    border-top: 0;
+  }
+  .aside :global(.aside-nav .link) {
+    min-height: 40px;
+    color: var(--color-font-label);
+    border-radius: 6px;
+  }
+  .aside :global(.aside-nav .link.active) {
+    color: var(--color-font);
+    background: var(--color-primary-background);
+  }
+  .aside :global(.aside-nav .nav-name) {
+    font-size: 14px;
+    font-weight: 500;
+  }
 </style>

@@ -1,158 +1,81 @@
 import { musicSearch } from '@/shared/ipc/resource'
-
+import { buildMusicQueryKey, buildMusicRequestKey, buildMusicSourceKey } from './pageCache'
 import { musicState } from './state'
 
-const CACHE_TIME = 60 * 60_000 * 6 // 6 hours
+export const buildRequestKey = buildMusicRequestKey
 
-const buildSourceKey = (extId: string, source: string) => `${extId}.${source}`
-const buildSearchKey = (extId: string, source: string, limit: number, text: string) => {
-  return `${extId}.${source}.${limit}.${text}`
-}
-export const buildRequestKey = (extId: string, source: string, page: number, limit: number, text: string) => {
-  return JSON.stringify({ extId, source, page, limit, text })
-}
 export const parseRequestKey = (params: string) => {
   try {
-    return JSON.parse(params) as { extId: string; source: string; page: number; limit: number; text: string }
+    return JSON.parse(params) as {
+      extId: string
+      source: string
+      page: number
+      limit: number
+      text: string
+      artist?: string
+    }
   } catch {
     return null
   }
 }
 
 export const resetListInfo = (extId: string, source: string) => {
-  let listInfo = musicState.lists.get(buildSourceKey(extId, source))
-  if (!listInfo) return
-  listInfo.requestPromise = undefined
-  listInfo.page = 0
-  listInfo.total = 0
-  listInfo.searchKey = null
-  listInfo.requestKey = null
-  listInfo.cacheTime = 0
+  musicState.cache.clearScope(buildMusicSourceKey(extId, source))
 }
 export const resetAllListInfo = () => {
-  musicState.lists.forEach((listInfo) => {
-    listInfo.requestPromise = undefined
-    listInfo.page = 0
-    listInfo.total = 0
-    listInfo.searchKey = null
-    listInfo.requestKey = null
-    listInfo.cacheTime = 0
-  })
+  musicState.cache.clear()
 }
 
-const getCachedListInfo = (
-  extId: string,
-  source: string,
-  page: number,
-  limit: number,
-  text: string
-): [Promise<AnyListen.IPCResource.MusicListResult> | null, number] | null => {
-  const listInfo = musicState.lists.get(buildSourceKey(extId, source))
-  if (listInfo && performance.now() - listInfo.cacheTime < CACHE_TIME) {
-    if (listInfo.requestKey == buildRequestKey(extId, source, page, limit, text)) {
-      return [listInfo.requestPromise!, listInfo.total]
-    }
-    if (listInfo.searchKey == buildSearchKey(extId, source, limit, text)) {
-      return [null, listInfo.total]
-    }
-  }
-  return null
-}
-const setCachedListInfo = (
-  extId: string,
-  source: string,
-  page: number,
-  limit: number,
-  text: string,
-  promise: Promise<AnyListen.IPCResource.MusicListResult>
-) => {
-  const sourceKey = buildSourceKey(extId, source)
-  const searchKey = buildSearchKey(extId, source, limit, text)
-  const requestKey = buildRequestKey(extId, source, page, limit, text)
-  let listInfo = musicState.lists.get(sourceKey)
-  if (!listInfo) {
-    listInfo = {
-      page: 0,
-      total: 0,
-      limit,
-      searchKey: null,
-      requestKey: null,
-      cacheTime: performance.now(),
-    }
-    musicState.lists.set(sourceKey, listInfo)
-  }
-  listInfo.searchKey = searchKey
-  listInfo.requestKey = requestKey
-  listInfo.requestPromise = promise
-    .then((result) => {
-      const listInfo = musicState.lists.get(sourceKey)
-      if (listInfo?.requestKey === requestKey) {
-        listInfo.page = page
-        listInfo.limit = limit
-        listInfo.total = result.total
-        listInfo.cacheTime = performance.now()
-      }
-      return result
-    })
-    .catch((error) => {
-      const listInfo = musicState.lists.get(sourceKey)
-      if (listInfo?.requestKey === requestKey) {
-        listInfo.requestPromise = undefined
-        listInfo.page = 0
-        listInfo.total = 0
-        listInfo.cacheTime = 0
-      }
-      console.log(error)
-      throw error
-    })
-}
-
+/* eslint-disable @typescript-eslint/max-params -- Keep the existing six-argument API compatible and add optional reload control. */
 export const search = (
   extensionId: string,
   source: string,
   name: string,
   artist: string,
   page: number,
-  limit: number
+  limit: number,
+  options: { force?: boolean } = {}
 ): {
   promise: Promise<AnyListen.IPCResource.MusicListResult>
+  result?: AnyListen.IPCResource.MusicListResult
   total: number
 } => {
-  console.log(extensionId, source, name, artist, page, limit)
   if (!name.trim().length) {
-    return {
-      promise: Promise.resolve({
-        list: [],
-        total: 0,
-        limit,
-        page,
-      }),
-      total: 0,
-    }
+    const result = { list: [], total: 0, limit, page }
+    return { promise: Promise.resolve(result), result, total: 0 }
   }
-  const cacheListInfo = getCachedListInfo(extensionId, source, page, limit, name)
-  if (cacheListInfo?.[0]) {
-    return {
-      promise: cacheListInfo[0],
-      total: cacheListInfo[1],
-    }
-  }
-  const promise = musicSearch({
-    extensionId,
-    source,
-    name,
-    artist,
-    limit,
-    page,
-  }).then((result) => {
-    console.log(result)
-    return result
-  })
-  setCachedListInfo(extensionId, source, page, limit, name, promise)
-  return {
-    promise,
-    total: cacheListInfo?.[1] ?? 0,
-  }
+  const queryKey = buildMusicQueryKey(extensionId, source, limit, name, artist)
+  const previous = musicState.cache.latest(queryKey)
+  const response = musicState.cache.request(
+    buildRequestKey(extensionId, source, page, limit, name, artist),
+    queryKey,
+    buildMusicSourceKey(extensionId, source),
+    async () => musicSearch({ extensionId, source, name, artist, limit, page }),
+    options.force
+  )
+  return { ...response, total: response.result?.total ?? previous?.total ?? 0 }
+}
+/* eslint-enable @typescript-eslint/max-params */
+
+// Only the visible search page calls this once for its immediate next page.
+// Sharing one slot prevents overlapping speculative requests across searches.
+export const prefetchPage = (
+  extensionId: string,
+  source: string,
+  name: string,
+  artist: string,
+  page: number,
+  limit: number
+) => {
+  if (musicState.prefetchPromise) return
+  const { promise, result } = search(extensionId, source, name, artist, page, limit)
+  if (result) return
+  musicState.prefetchPromise = promise
+  void promise
+    .catch(() => {})
+    .finally(() => {
+      if (musicState.prefetchPromise === promise) musicState.prefetchPromise = null
+    })
 }
 
 export { findMusic } from '@/shared/ipc/resource'

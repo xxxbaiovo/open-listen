@@ -6,13 +6,11 @@
     source,
     disabled,
     musiccount,
-    multimode,
     finding,
     saveable,
     onplay,
     onplayrandom,
     onsave,
-    onmulti,
     onfind,
     onduplicate,
     onsort,
@@ -20,13 +18,11 @@
     source: AnyListen.Player.SourceType
     disabled: boolean
     musiccount: number
-    multimode: boolean
     finding: boolean
     saveable?: boolean
     onplay: () => void
     onplayrandom: () => void
     onsave: () => void
-    onmulti: () => void
     onfind: () => void
     onduplicate: () => void
     onsort: () => void
@@ -55,9 +51,7 @@
     {/if}
   </div>
   <div class="btns">
-    <Btn min outline={!multimode} icon onclick={onmulti} aria-label={multimode ? $t('batch_select_exit') : $t('batch_select')}>
-      <SvgIcon name="multiple" />
-    </Btn>
+
     <Btn min outline={!finding} icon onclick={onfind} aria-label={finding ? $t('find_music_exit') : $t('find_music')}>
       <SvgIcon name="search" />
     </Btn>

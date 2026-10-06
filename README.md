@@ -1,3 +1,13 @@
+# Open Listen
+
+A customized desktop music player based on [Any Listen](https://github.com/any-listen/any-listen).
+
+- [Download Windows x64 installer](https://github.com/xxxbaiovo/open-listen/releases/latest)
+- [Release and update guide](docs/OPEN_LISTEN_RELEASE.md)
+- Original license and attribution are retained. Icons and project presentation are being updated.
+
+---
+
 <p align="center"><a href="https://github.com/any-listen/any-listen"><img height="110" src="./docs/images/header-logo.svg" alt="any-listen logo"></a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="https://github.com/any-listen/any-listen"><img height="86" src="./docs/images/header-name.svg" alt="any-listen name"></a></p>
 
 <p align="center">A cross-platform private music playback service</p>

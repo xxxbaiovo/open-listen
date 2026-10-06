@@ -2,7 +2,7 @@ import path from 'node:path'
 
 import { DEV_SERVER_PORTS } from '@any-listen/common/constants'
 import { getPlatform, getOSVersion } from '@any-listen/nodejs/index'
-import { BrowserWindow, Notification, dialog, session } from 'electron'
+import { BrowserWindow, Notification, dialog, screen, session } from 'electron'
 
 import { appState } from '@/app'
 import { collectMusic, uncollectMusic } from '@/modules/player'
@@ -14,13 +14,64 @@ import { winMainEvent } from './event'
 import { rendererIPC } from './rendererEvent'
 import { winMainState } from './state'
 import { createTaskBarButtons, getWindowSizeInfo } from './utils'
+import { fitWindowBounds, readWindowBounds, saveWindowBounds } from './windowBounds'
 
 let browserWindow: Electron.BrowserWindow | null = null
+let resizeSession: { edge: string; cursor: Electron.Point; bounds: Electron.Rectangle } | null = null
+
+export const resizeWindow = (phase: 'start' | 'move' | 'end', edge?: string, origin?: Electron.Point) => {
+  if (!browserWindow || browserWindow.isMaximized() || browserWindow.isFullScreen()) {
+    resizeSession = null
+    return
+  }
+  if (phase === 'start') {
+    if (!edge || !['n', 's', 'w', 'e', 'nw', 'ne', 'sw', 'se'].includes(edge)) return
+    if (!origin || !Number.isFinite(origin.x) || !Number.isFinite(origin.y)) return
+    // The pointer can already have moved by the time its IPC message arrives.
+    resizeSession = { edge, cursor: origin, bounds: browserWindow.getBounds() }
+    return
+  }
+  if (!resizeSession) return
+  const { bounds, cursor, edge: direction } = resizeSession
+  const point = screen.getCursorScreenPoint()
+  const [minWidth, minHeight] = browserWindow.getMinimumSize()
+  const next = { ...bounds }
+  if (direction.includes('e')) next.width = Math.max(minWidth, bounds.width + point.x - cursor.x)
+  if (direction.includes('s')) next.height = Math.max(minHeight, bounds.height + point.y - cursor.y)
+  if (direction.includes('w')) {
+    next.width = Math.max(minWidth, bounds.width - point.x + cursor.x)
+    next.x = bounds.x + bounds.width - next.width
+  }
+  if (direction.includes('n')) {
+    next.height = Math.max(minHeight, bounds.height - point.y + cursor.y)
+    next.y = bounds.y + bounds.height - next.height
+  }
+  browserWindow.setBounds(next)
+  if (phase === 'end') resizeSession = null
+}
 
 const winEvent = () => {
   if (!browserWindow) return
+  const target = browserWindow
+  let saveTimer: ReturnType<typeof setTimeout> | undefined
+  const saveBounds = () => {
+    clearTimeout(saveTimer)
+    if (target.isDestroyed() || target.isFullScreen() || target.isMinimized()) return
+    saveWindowBounds(path.join(appState.dataPath, 'window-bounds.json'), {
+      ...target.getNormalBounds(), maximized: target.isMaximized(),
+    })
+  }
+  const scheduleSave = () => {
+    clearTimeout(saveTimer)
+    saveTimer = setTimeout(saveBounds, 250)
+  }
+  target.on('resize', scheduleSave)
+  target.on('move', scheduleSave)
+  target.on('maximize', scheduleSave)
+  target.on('unmaximize', scheduleSave)
 
   browserWindow.on('close', (event) => {
+    saveBounds()
     if (appState.isSkipTrayQuit || !appState.appSetting['tray.enable']) {
       browserWindow!.setProgressBar(-1)
       winMainEvent.close()
@@ -32,6 +83,8 @@ const winEvent = () => {
   })
 
   browserWindow.on('closed', () => {
+    clearTimeout(saveTimer)
+    resizeSession = null
     browserWindow = null
   })
 
@@ -43,8 +96,12 @@ const winEvent = () => {
   })
 
   browserWindow.on('blur', () => {
+    resizeSession = null
     winMainEvent.blur()
   })
+
+  browserWindow.on('maximize', () => winMainEvent.maximized(true))
+  browserWindow.on('unmaximize', () => winMainEvent.maximized(false))
 
   browserWindow.on('enter-full-screen', () => {
     winMainState.isFullScreen = true
@@ -54,12 +111,6 @@ const winEvent = () => {
     winMainState.isFullScreen = false
     winMainEvent.fullscreen(false)
 
-    // macOS needs here to set resizable to false after exiting full screen
-    if (import.meta.env.VITE_IS_MAC) {
-      if (browserWindow?.resizable) {
-        browserWindow.setResizable(false)
-      }
-    }
   })
 
   const handlerReadyToShow = () => {
@@ -94,6 +145,8 @@ const winEvent = () => {
 export const createWindow = () => {
   closeWindow()
   const windowSizeInfo = getWindowSizeInfo(appState.appSetting['common.windowSizeId'])
+  const savedBounds = readWindowBounds(path.join(appState.dataPath, 'window-bounds.json'))
+  const restoredBounds = savedBounds ? fitWindowBounds(savedBounds, screen.getDisplayMatching(savedBounds).workArea) : null
 
   const theme = themeState
   const ses = session.fromPartition('persist:view-main')
@@ -118,8 +171,10 @@ export const createWindow = () => {
     // enableRemoteModule: false,
     // icon: join(appState.__static, isWin ? 'icons/256x256.ico' : 'icons/512x512.png'),
     roundedCorners: appState.envParams.cmdParams.dt,
-    resizable: false,
-    maximizable: false,
+    resizable: true,
+    maximizable: true,
+    minWidth: 800,
+    minHeight: 540,
     fullscreenable: true,
     show: false,
     webPreferences: {
@@ -141,12 +196,30 @@ export const createWindow = () => {
     options.trafficLightPosition = { x: 12, y: 8 }
   }
   if (appState.envParams.cmdParams.dt) options.backgroundColor = theme.colors['--color-primary-light-1000']
+  if (restoredBounds) {
+    Object.assign(options, restoredBounds)
+    options.useContentSize = false
+  }
   if (appState.appSetting['common.startInFullscreen']) {
     options.fullscreen = true
     winMainState.isFullScreen = true
     if (import.meta.env.VITE_IS_LINUX) options.resizable = true
   }
   browserWindow = new BrowserWindow(options)
+  // Windows may adjust constructor dimensions for a frameless native shadow.
+  // Apply the saved outer bounds after native window initialization as well.
+  if (restoredBounds && !options.fullscreen && !savedBounds?.maximized) {
+    const target = browserWindow
+    target.once('ready-to-show', () => {
+      target.setBounds(restoredBounds)
+      const actual = target.getNormalBounds()
+      const dw = actual.width - restoredBounds.width
+      const dh = actual.height - restoredBounds.height
+      if ((dw || dh) && Math.abs(dw) <= 8 && Math.abs(dh) <= 8) {
+        target.setBounds({ ...restoredBounds, width: restoredBounds.width - dw, height: restoredBounds.height - dh })
+      }
+    })
+  }
 
   const winURL = import.meta.env.DEV
     ? `http://localhost:${DEV_SERVER_PORTS['view-main']}`
@@ -162,6 +235,7 @@ export const createWindow = () => {
   }
 
   winEvent()
+  if (savedBounds?.maximized && !options.fullscreen) browserWindow.maximize()
 
   if (appState.envParams.cmdParams.odt) handleOpenDevTools(browserWindow.webContents)
 
@@ -224,6 +298,12 @@ export const toggleHide = () => {
     browserWindow.isMinimized() ? showWindow() : browserWindow.minimize()
   }
 }
+export const isMaximized = () => browserWindow?.isMaximized() ?? false
+export const toggleMaximize = () => {
+  if (!browserWindow || browserWindow.isFullScreen()) return
+  if (browserWindow.isMaximized()) browserWindow.unmaximize()
+  else browserWindow.maximize()
+}
 export const toggleMinimize = () => {
   if (!browserWindow) return
   if (browserWindow.isVisible()) {
@@ -269,21 +349,7 @@ export const toggleDevTools = () => {
 
 export const setFullScreen = (isFullscreen: boolean): boolean => {
   if (!browserWindow) return false
-  // https://github.com/any-listen/any-listen/issues/190
-  // in electron ^41.2.0, windows -dt mode need to set resizable to true before setting full screen
-  if (appState.envParams.cmdParams.dt || import.meta.env.VITE_IS_LINUX) {
-    // linux 需要先设置为可调整窗口大小才能全屏
-    if (isFullscreen) {
-      browserWindow.setResizable(isFullscreen)
-      browserWindow.setFullScreen(isFullscreen)
-    } else {
-      browserWindow.setFullScreen(isFullscreen)
-      // windows/linux need to set resizable to true after exiting full screen
-      if (!import.meta.env.VITE_IS_MAC) browserWindow.setResizable(isFullscreen)
-    }
-  } else {
-    browserWindow.setFullScreen(isFullscreen)
-  }
+  browserWindow.setFullScreen(isFullscreen)
   winMainState.isFullScreen = isFullscreen
   return isFullscreen
 }

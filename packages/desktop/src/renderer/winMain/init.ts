@@ -24,6 +24,7 @@ import {
   getWebContents,
   hideWindow,
   isExistWindow,
+  isMaximized,
   isShowWindow,
   minimize,
   setFullScreen,
@@ -72,6 +73,7 @@ export const initWinMain = () => {
   })
   winMainEvent.on('inited', () => {
     winMainReadyEvent.emit()
+    void rendererIPC.maximized(isMaximized())
   })
   winMainEvent.on('hide', () => {
     void rendererIPC.winShow(false)
@@ -81,6 +83,9 @@ export const initWinMain = () => {
   })
   winMainEvent.on('fullscreen', (isFullscreen) => {
     void rendererIPC.fullscreen(isFullscreen)
+  })
+  winMainEvent.on('maximized', (isMaximized) => {
+    void rendererIPC.maximized(isMaximized)
   })
   themeEvent.on('theme_change', (theme) => {
     void rendererIPC.themeChanged(theme)

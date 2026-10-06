@@ -3,82 +3,72 @@ import themes from '@any-listen/theme/index.json'
 
 import { appState } from '@/app'
 import { getStore } from '@/shared/store'
-import { encodePath, isUrl, joinPath } from '@/shared/utils'
+import { joinPath } from '@/shared/utils'
 
-let userThemes: AnyListen.Theme[]
-export const getAllThemes = () => {
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+let userThemes: AnyListen.Theme[] | undefined
+const supportedThemes = themes.filter((theme) => theme.id === 'midnight' || theme.id === 'grey')
+const legacyLightThemeIds = new Set([
+  'green',
+  'blue',
+  'blue_plus',
+  'orange',
+  'red',
+  'pink',
+  'purple',
+  'grey',
+  'ming',
+  'blue2',
+  'mid_autumn',
+  'naruto',
+  'china_ink',
+  'happy_new_year',
+])
+
+const getUserThemes = () => {
   userThemes ??= getStore(STORE_NAMES.THEME).get<AnyListen.Theme[]>('themes') ?? []
-  return {
-    themes,
-    userThemes,
-    dataPath: joinPath(appState.dataPath, 'theme_images'),
-  }
+  return userThemes
 }
 
+export const getAllThemes = () => ({
+  themes: supportedThemes,
+  // Keep saved custom themes intact, but only offer the two supported appearances.
+  userThemes: [],
+  dataPath: joinPath(appState.dataPath, 'theme_images'),
+})
+
 export const saveTheme = (theme: AnyListen.Theme) => {
-  const targetTheme = userThemes.find((t) => t.id === theme.id)
+  const savedThemes = getUserThemes()
+  const targetTheme = savedThemes.find((t) => t.id === theme.id)
   if (targetTheme) Object.assign(targetTheme, theme)
-  else userThemes.push(theme)
-  getStore(STORE_NAMES.THEME).set('themes', userThemes)
+  else savedThemes.push(theme)
+  getStore(STORE_NAMES.THEME).set('themes', savedThemes)
 }
 
 export const removeTheme = (id: string) => {
-  const index = userThemes.findIndex((t) => t.id === id)
+  const savedThemes = getUserThemes()
+  const index = savedThemes.findIndex((t) => t.id === id)
   if (index < 0) return
-  userThemes.splice(index, 1)
-  getStore(STORE_NAMES.THEME).set('themes', userThemes)
+  savedThemes.splice(index, 1)
+  getStore(STORE_NAMES.THEME).set('themes', savedThemes)
 }
 
-const copyTheme = (theme: AnyListen.Theme): AnyListen.Theme => {
-  return {
-    ...theme,
-    config: {
-      ...theme.config,
-      extInfo: { ...theme.config.extInfo },
-      themeColors: { ...theme.config.themeColors },
-    },
-  }
+export const resolveThemeId = (id: string, shouldUseDarkColors: boolean): 'midnight' | 'grey' => {
+  if (id === 'auto') return shouldUseDarkColors ? 'midnight' : 'grey'
+  if (legacyLightThemeIds.has(id)) return 'grey'
+  return 'midnight'
 }
+
 export const getTheme = () => {
-  // fs.promises.readdir()
-  const shouldUseDarkColors = appState.shouldUseDarkColors
-  let themeId =
-    appState.appSetting['theme.id'] == 'auto'
-      ? shouldUseDarkColors
-        ? // appState.appSetting['theme.darkId']
-          'black'
-        : appState.appSetting['theme.lightId']
-      : appState.appSetting['theme.id']
-  // themeId = 'naruto'
-  // themeId = 'pink'
-  // themeId = 'black'
-  let theme = themes.find((theme) => theme.id == themeId)
-  if (!theme) {
-    userThemes = getStore(STORE_NAMES.THEME).get('themes') ?? []
-    theme = userThemes.find((theme) => theme.id == themeId)
-    if (theme) {
-      if (theme.config.extInfo['--background-image'] != 'none') {
-        theme = copyTheme(theme)
-        theme.config.extInfo['--background-image'] = isUrl(theme.config.extInfo['--background-image'])
-          ? `url(${theme.config.extInfo['--background-image']})`
-          : `url(file:///${encodePath(joinPath(appState.dataPath, 'theme_images', theme.config.extInfo['--background-image']))})`
-      }
-    } else {
-      themeId = appState.appSetting['theme.id'] == 'auto' && shouldUseDarkColors ? 'black' : 'green'
-      theme = themes.find((theme) => theme.id == themeId)!
-    }
-  }
-
-  const colors: Record<string, string> = {
-    ...theme.config.themeColors,
-    ...theme.config.extInfo,
-  }
+  const themeId = resolveThemeId(appState.appSetting['theme.id'], appState.shouldUseDarkColors)
+  const theme = supportedThemes.find((theme) => theme.id === themeId)!
 
   return {
     id: themeId,
     name: theme.name,
     isDark: theme.isDark,
-    colors,
+    colors: {
+      ...theme.config.themeColors,
+      ...theme.config.extInfo,
+    },
   }
 }

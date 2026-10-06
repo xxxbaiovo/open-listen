@@ -300,7 +300,8 @@ export const initAppEnv = async () => {
     initDeviceId(appState.dataPath),
     getAppSetting().then((res) => res.setting),
   ])
-  if (import.meta.env.VITE_IS_MAC) {
+  // Windows needs an opaque native window for reliable edge resizing and snapping.
+  if (import.meta.env.VITE_IS_MAC || import.meta.env.VITE_IS_WINDOWS) {
     appState.envParams.cmdParams.dt = true
   } else {
     appState.envParams.cmdParams.dt ??= !appState.appSetting['common.transparentWindow']

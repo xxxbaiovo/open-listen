@@ -4,7 +4,6 @@ import { settingEvent } from '@/modules/setting/store/event'
 import { settingState } from '@/modules/setting/store/state'
 import { createUnsubscriptionSet } from '@/shared'
 
-import { commandEvent } from '../command/event'
 import { initPlayer as initPlayerModules } from './init/index'
 import {
   initPlayHistoryList,
@@ -20,7 +19,6 @@ import {
   setCollectStatus,
   setInited,
   setPlayMusicInfo,
-  showMusicComment,
 } from './store/actions'
 import { playerEvent } from './store/event'
 import { getPlayInfo } from './store/playerRemoteAction'
@@ -75,11 +73,6 @@ export const initPlayer = () => {
       subscriptions.add(registerLocalPlayerAction())
       subscriptions.add(registerRemoteHistoryListAction())
       subscriptions.add(registerRemoteListAction())
-      subscriptions.add(
-        commandEvent.register('showMusicComment', async () => {
-          await showMusicComment()
-        })
-      )
     })
     void init(isInit)
     isInit ||= true

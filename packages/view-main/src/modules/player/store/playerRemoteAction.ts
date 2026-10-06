@@ -7,7 +7,9 @@ import { lyricEvent } from '@/modules/lyric/store/event'
 import { updateListMusic } from '@/modules/musicLibrary/store/actions'
 import { musicLibraryEvent } from '@/modules/musicLibrary/store/event'
 import { settingState } from '@/modules/setting/store/state'
-import { getMusicPic as getMusicPicFromRemote, getMusicUrl as getMusicUrlFromRemote } from '@/shared/ipc/music'
+import { getMusicLyric as getMusicLyricFromRemote, getMusicPic as getMusicPicFromRemote, getMusicUrl as getMusicUrlFromRemote } from '@/shared/ipc/music'
+import { createResourceRequests } from '@/shared/resourceRequest'
+import { isValidLyric } from '@any-listen/common/lyric'
 import { sendPlayerEvent as sendRemotePlayerEvent, sendPlayHistoryListAction } from '@/shared/ipc/player'
 import { playerActionEvent, playHistoryListActionEvent } from '@/shared/ipc/player/event'
 import { sendPlayerEvent as sendWinLyricPlayerEvent } from '@/shared/ipcLyric'
@@ -33,9 +35,19 @@ import { playerState } from './state'
 
 export { getPlayInfo } from '@/shared/ipc/player'
 
-export { getMusicLyric } from '@/shared/ipc/music'
+const lyricRequests = createResourceRequests<AnyListen.IPCMusic.MusicLyricInfo>(0, 24_000)
+export const getMusicLyric = async (info: Parameters<typeof getMusicLyricFromRemote>[0]) => lyricRequests.get(
+  info.musicInfo.id,
+  async () => {
+    const result = await getMusicLyricFromRemote(info)
+    if (!isValidLyric(result.info.lyric)) throw new Error('No readable lyrics')
+    return result
+  },
+  info.isRefresh
+)
 
 const picCache = createCache<AnyListen.IPCMusic.MusicPicInfo>()
+export const getCachedMusicPic = (id: string) => picCache.get(id)?.url
 const picCacheQueue: string[] = []
 const picRemoteGettingPromises = new Map<string, Promise<AnyListen.IPCMusic.MusicPicInfo>>()
 
@@ -226,32 +238,14 @@ export const getMusicPicDelay = (info: GetMusicPicInfo, onUrl: (url: string) => 
   }
 }
 
-const getOtherSourcePromises = new Map<string, Promise<AnyListen.IPCMusic.MusicUrlInfo>>()
+const urlRequests = createResourceRequests<AnyListen.IPCMusic.MusicUrlInfo>(5 * 60_000, 30_000)
 let prevProgress = {
   duration: 0,
   currentTime: 0,
 }
 export const getMusicUrl = async (info: AnyListen.IPCMusic.GetMusicUrlInfo): Promise<AnyListen.IPCMusic.MusicUrlInfo> => {
-  let key = `${info.musicInfo.id}_${info.quality}_${info.isRefresh}`
-
-  if (getOtherSourcePromises.has(key)) return getOtherSourcePromises.get(key)!
-
-  const promise = new Promise<AnyListen.IPCMusic.MusicUrlInfo>((resolve, reject) => {
-    let timeout: null | number = setTimeout(() => {
-      timeout = null
-      reject(new Error('find music timeout'))
-    }, 30_000)
-    getMusicUrlFromRemote(info)
-      .then(resolve)
-      .catch(reject)
-      .finally(() => {
-        if (timeout) clearTimeout(timeout)
-      })
-  }).finally(() => {
-    if (getOtherSourcePromises.has(key)) getOtherSourcePromises.delete(key)
-  })
-  getOtherSourcePromises.set(key, promise)
-  return promise
+  const quality = info.quality ?? settingState.setting['player.playQuality']
+  return urlRequests.get(`${info.musicInfo.id}_${quality}`, async () => getMusicUrlFromRemote({ ...info, quality }), info.isRefresh)
 }
 
 /**

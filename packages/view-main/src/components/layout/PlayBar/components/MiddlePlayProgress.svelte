@@ -1,44 +1,51 @@
 <script lang="ts">
   import PlayerProgressBar from '@/components/common/PlayerProgressBar.svelte'
   import { duration, progress } from '@/modules/player/reactive.svelte'
+
+  let { full = false }: { full?: boolean } = $props()
 </script>
 
-<div class="middle-play-progress">
+<div class="middle-play-progress" class:full>
   <span>{$progress.nowPlayTimeStr}</span>
-  <div class="progress">
-    <PlayerProgressBar />
-  </div>
-  <!-- <span style="margin: 0 1px;">/</span> -->
+  <div class="progress"><PlayerProgressBar /></div>
   <span>{$duration.label}</span>
 </div>
 
 <style lang="less">
   .middle-play-progress {
-    // padding-left: 10px;
     display: flex;
-    // position: relative;
     flex: none;
-    flex-flow: row nowrap;
     align-items: center;
+    gap: 8px;
     width: 30%;
-    font-size: 13px;
-    color: var(--color-550);
+    min-width: 0;
+    color: var(--color-font-label);
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+  .middle-play-progress.full {
+    width: 100%;
+    max-width: 860px;
+  }
+  .middle-play-progress > span {
+    flex: none;
+    min-width: 32px;
+  }
+  .middle-play-progress > span:last-child {
+    text-align: right;
   }
   .progress {
-    // width: 160px;
     position: relative;
-    // position: absolute;
-    // top: 0;
-    // left: 0;
-    // width: 100%;
     flex: auto;
+    min-width: 0;
     padding: 8px 0;
-    // padding-bottom: 6px;
-    margin: 0 8px;
-    // height: 15px;
-    // .progressBar {
-    //   height: 4px;
-    //   // border-radius: 0;
-    // }
+  }
+  .progress :global(> .progress) {
+    height: 4px;
+  }
+  .progress:hover,
+  .progress:focus-within {
+    --color-progress-fill: var(--color-primary);
   }
 </style>

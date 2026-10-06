@@ -69,10 +69,15 @@
         {/if}
       {:else}
         <Input
+          aria-label={$t('settings.basic.font_family')}
           value={font.val}
           placeholder={$t('settings.basic.font_family_default')}
           onchange={(val) => {
             void updateSetting({ 'common.font': val })
+          }}
+          onblur={(event) => {
+            const value = event.currentTarget.value.trim()
+            if (value !== font.val) void updateSetting({ 'common.font': value })
           }}
         />
       {/if}

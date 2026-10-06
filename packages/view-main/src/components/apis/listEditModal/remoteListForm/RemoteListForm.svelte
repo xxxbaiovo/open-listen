@@ -9,7 +9,7 @@
 
   let {
     item,
-    targetId,
+    targetId
   }: {
     item?: AnyListen.List.RemoteListInfo | null
     targetId?: AnyListen.List.ParentId
@@ -30,12 +30,12 @@
       source: '',
       syncTime: 0,
       pic: '',
-      songCount: 0,
-    },
+      songCount: 0
+    }
   }
   let listInfo = $state<AnyListen.List.RemoteListInfo>({
     ...initData,
-    meta: { ...initData.meta },
+    meta: { ...initData.meta }
   })
   let provider = $state<AnyListen.Extension.ListProviderResource | null>(null)
   let formList = $derived.by(() => {
@@ -50,14 +50,14 @@
             value: listInfo.meta.lazzyParseMeta ?? false,
             name: i18n.t('edit_list_modal.lazzy_parse_meta'),
             description: i18n.t('edit_list_modal.lazzy_parse_meta_tip'),
-            field: 'lazzyParseMeta',
+            field: 'lazzyParseMeta'
           } satisfies AnyListen.Extension.FormValueItem
         }
         const ss = {
           ...(s as AnyListen.Extension.FormValueItem),
           value: listInfo.meta[s.field] as any,
           name: extI18n.t(extId, s.name),
-          description: extI18n.t(extId, s.description),
+          description: extI18n.t(extId, s.description)
         } satisfies AnyListen.Extension.FormValueItem
         if (ss.type == 'selection') {
           ss.enumName = ss.enumName.map((n) => extI18n.t(extId, n))
@@ -80,7 +80,7 @@
     listInfo = {
       ...initData,
       id: targetId || '',
-      meta: { ...initData.meta },
+      meta: { ...initData.meta }
     }
   }
   export const submit = async () => {
@@ -100,20 +100,29 @@
     if (!item) return
     listInfo = {
       ...item,
-      meta: { ...item.meta },
+      meta: { ...item.meta }
     }
   })
   $effect(() => {
     if (item) {
       provider = item.meta.extensionId
-        ? $resourceList.listProvider.find((p) => p.extensionId == item.meta.extensionId && p.id == item.meta.source) || null
+        ? $resourceList.listProvider.find((p) => p.extensionId == item.meta.extensionId && p.id == item.meta.source) ||
+          null
         : null
     } else reset()
   })
 </script>
 
 <main class="main">
-  <Input autofocus placeholder={$t('edit_list_modal__form_list_name')} bind:value={listInfo.name} />
+  <label class="name-field">
+    <span>{$t('edit_list_modal__form_list_name')}</span>
+    <Input
+      autofocus
+      aria-label={$t('edit_list_modal__form_list_name')}
+      placeholder={$t('edit_list_modal__form_list_name')}
+      bind:value={listInfo.name}
+    />
+  </label>
   <SourceSelect bind:value={provider} disabled={!!item} />
   {#if provider}
     <ProviderForm
@@ -126,6 +135,14 @@
 </main>
 
 <style lang="less">
+  .name-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 4px;
+    font-size: 13px;
+    font-weight: 600;
+  }
   .main {
     display: flex;
     flex: auto;

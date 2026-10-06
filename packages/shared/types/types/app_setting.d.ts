@@ -87,6 +87,8 @@ declare global {
        * 切歌模式
        */
       'player.togglePlayMethod': 'listLoop' | 'random' | 'list' | 'singleLoop' | 'none'
+      /** Shuffle ordering independently of repeat mode. */
+      'player.shuffle': boolean
 
       /**
        * 优先播放的音质

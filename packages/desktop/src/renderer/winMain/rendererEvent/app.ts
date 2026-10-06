@@ -18,6 +18,8 @@ import {
   closeWindow,
   getCacheSize as getAppCacheSize,
   minimize,
+  resizeWindow,
+  toggleMaximize,
   setFullScreen,
   showOpenDialog,
   showSaveDialog,
@@ -44,6 +46,12 @@ export const createExposeApp = () => {
     },
     async minWindow() {
       minimize()
+    },
+    async maximizeWindow() {
+      toggleMaximize()
+    },
+    async resizeWindow(event, phase, edge, origin) {
+      resizeWindow(phase, edge, origin)
     },
     async closeWindow(event, isForce) {
       if (isForce) {

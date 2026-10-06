@@ -13,6 +13,8 @@ export declare type ClientCommonActions = WarpPromiseRecord<{
   winShow: (show: boolean) => void
   /** 全屏模式变更 */
   fullscreen: (fullscreen: boolean) => void
+  /** 原生窗口最大化状态变更 */
+  maximized: (maximized: boolean) => void
   /** 显示消息弹窗 */
   showMessageBox: (key: string, extensionId: string, options: AnyListen.IPCCommon.MessageDialogOptions) => Promise<number>
   showInputBox: (

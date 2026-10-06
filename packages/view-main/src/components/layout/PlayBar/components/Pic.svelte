@@ -4,13 +4,18 @@
   import { setShowPlayDetail } from '@/modules/playDetail/store/commit'
   import { musicInfo } from '@/modules/player/reactive.svelte'
   import { playerState } from '@/modules/player/store/state'
+  import { t } from '@/plugins/i18n'
+  let { compact = false }: { compact?: boolean } = $props()
   let pic = $derived($musicInfo.pic)
 </script>
 
-<div class="container">
+<div class="container" class:compact>
   <button
     type="button"
     class="btn"
+    data-music-drag-handle={compact || undefined}
+    ondragstart={(event) => event.preventDefault()}
+    aria-label={$t('ui.open_lyrics')}
     onclick={() => {
       setShowPlayDetail(true)
     }}
@@ -45,6 +50,21 @@
 
     &:hover {
       opacity: 0.6;
+    }
+  }
+  .container.compact {
+    width: 56px;
+    height: 56px;
+    padding: 0;
+  }
+  .compact .btn {
+    overflow: hidden;
+    border-radius: 4px;
+  }
+  @media (max-width: 700px) {
+    .container.compact {
+      width: 40px;
+      height: 40px;
     }
   }
 </style>

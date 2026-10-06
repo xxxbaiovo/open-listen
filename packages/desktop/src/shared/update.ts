@@ -47,51 +47,15 @@ class UpdateEvent {
   }
 }
 
-const enName = 'YW55LWxpc3Rlbg=='
-const name = Buffer.from(enName, 'base64').toString()
-const pkgName = `${name}-desktop`
-const address = [
-  [`https://raw.githubusercontent.com/${name}/${name}/main/packages/desktop/publish/version.json`, 'direct'],
-  [`https://registry.npmjs.org/@${name}/${pkgName}/latest`, 'npm'],
-  [`https://cdn.jsdelivr.net/gh/${name}/${name}/packages/desktop/publish/version.json`, 'direct'],
-  [`https://fastly.jsdelivr.net/gh/${name}/${name}/packages/desktop/publish/version.json`, 'direct'],
-  [`https://gcore.jsdelivr.net/gh/${name}/${name}/packages/desktop/publish/version.json`, 'direct'],
-  [`https://registry.npmmirror.com/@${name}/${pkgName}/latest`, 'npm'],
-  ['http://cdn.stsky.cn/any-listen/desktop/version.json', 'direct'],
-] as const
+// Version metadata is published together with the installer, never ahead of it.
+const updateInfoUrl = 'https://github.com/xxxbaiovo/open-listen/releases/latest/download/version.json'
 
-const getDirectInfo = async (url: string) => {
-  return request<Partial<AnyListen.UpdateInfo>>(url).then(({ body }) => {
-    if (body.version == null) throw new Error('failed')
-    return body as AnyListen.UpdateInfo
-  })
-}
-
-const getNpmPkgInfo = async (url: string) => {
-  return request<{ versionInfo?: string }>(url).then(({ body }) => {
-    if (!body.versionInfo) throw new Error('failed')
-    const info = JSON.parse(body.versionInfo) as Partial<AnyListen.UpdateInfo>
-    if (info.version == null) throw new Error('failed')
-    return info as AnyListen.UpdateInfo
-  })
-}
-export const getUpdateInfo = async (index = 0): Promise<AnyListen.UpdateInfo> => {
-  const [url, source] = address[index]
-  let promise: Promise<AnyListen.UpdateInfo>
-  switch (source) {
-    case 'direct':
-      promise = getDirectInfo(url)
-      break
-    case 'npm':
-      promise = getNpmPkgInfo(url)
-      break
+export const getUpdateInfo = async (): Promise<AnyListen.UpdateInfo> => {
+  const { body } = await request<Partial<AnyListen.UpdateInfo>>(updateInfoUrl)
+  if (typeof body.version !== 'string' || !Array.isArray(body.history)) {
+    throw new Error('Invalid Open Listen update metadata')
   }
-
-  return promise.catch(async (err: Error) => {
-    index++
-    if (index >= address.length) throw err
-    return getUpdateInfo(index)
-  })
+  return body as AnyListen.UpdateInfo
 }
 
 export class Update extends UpdateEvent {

@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unnecessary-condition */
 
 import { buildUrl } from '@any-listen/web'
+import { audioPreload } from '@/shared/audioPreload'
 
 import { appState } from '@/modules/app/store/state'
 import { settingState } from '@/modules/setting/store/state'
@@ -446,8 +447,16 @@ export const setPitchShifter = (val: number) => {
 
 // export const hasInitedAdvancedAudioFeatures = (): boolean => gainNode != null
 
+let releaseBufferedAudio: (() => void) | undefined
 export const setResource = (src: string) => {
   if (!audio) return
+  releaseBufferedAudio?.()
+  const buffered = audioPreload.take(src)
+  releaseBufferedAudio = buffered?.release
+  if (buffered) {
+    audio.src = buffered.url
+    return
+  }
   src = buildUrl(src, settingState.setting['network.proxyAllResources'], appState.proxyServerHost)
   audio.src = src
 }
@@ -465,6 +474,8 @@ export const setStop = () => {
     audio.src = ''
     audio.removeAttribute('src')
   }
+  releaseBufferedAudio?.()
+  releaseBufferedAudio = undefined
 }
 
 export const isEmpty = (): boolean => !audio?.src

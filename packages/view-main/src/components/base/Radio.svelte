@@ -23,121 +23,91 @@
   } = $props()
 </script>
 
-<div class="radio">
-  <input
-    {id}
-    type="radio"
-    aria-hidden="true"
-    class="input"
-    {checked}
-    {disabled}
-    {value}
-    {name}
-    oninput={() => {
-      onselect(value)
-    }}
-  />
+<div class="radio" class:checked class:disabled>
   <label for={id} class="content">
-    <div
-      class="container"
-      role="radio"
-      tabindex="0"
+    <input
+      {id}
+      {name}
+      {value}
+      {checked}
+      {disabled}
+      type="radio"
+      class="input"
       aria-label={arialabel ?? label}
-      aria-checked={checked}
-      aria-disabled={disabled}
+      oninput={() => onselect(value)}
       onkeydown={(event) => {
-        if (disabled) return
-        switch (event.key) {
-          case 'Enter':
-          case ' ':
-            event.preventDefault()
-            event.stopPropagation()
-            onselect(value)
-            break
+        if (event.key === 'Enter' && !disabled) {
+          event.preventDefault()
+          onselect(value)
         }
       }}
-    >
-      <svg version="1.1" class="icon" xmlns="http://www.w3.org/2000/svg" height="100%" width="100%" viewBox="0 32 448 448">
-        <use xlink:href="#icon-check-true" />
-      </svg>
-    </div>
-    {#if children}
-      {@render children()}
-    {:else}
-      <span class="label">
-        {label}
-      </span>
-    {/if}
+    />
+    <span class="container" aria-hidden="true"></span>
+    {#if children}{@render children()}{:else}<span class="label">{label}</span>{/if}
   </label>
 </div>
 
 <style lang="less">
   .radio {
-    display: inline-block;
-    // font-size: 56px;
-  }
-  .input {
-    display: none;
-    &[disabled] {
-      + .content {
-        opacity: 0.5;
-        .container,
-        .label {
-          cursor: default;
-        }
-      }
-    }
-    &:checked {
-      + .content {
-        .container {
-          &::after {
-            border-color: var(--color-primary-font);
-          }
-        }
-        .icon {
-          transform: scale(1);
-          // opacity: 1;
-        }
-      }
-    }
+    display: inline-flex;
+    vertical-align: middle;
   }
   .content {
+    position: relative;
     display: flex;
     align-items: center;
-    transition: @transition-normal;
-    transition-property: opacity;
+    gap: 9px;
+    min-height: 28px;
+    cursor: pointer;
+  }
+  .input {
+    position: absolute;
+    z-index: 1;
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    opacity: 0;
+    cursor: inherit;
   }
   .container {
     position: relative;
-    display: flex;
     flex: none;
-    width: 1em;
-    height: 1em;
-    color: var(--color-primary);
-    cursor: pointer;
-    // border: 1px solid #ccc;
-    &::after {
-      position: absolute;
-      inset: 0;
-      content: ' ';
-      border: 1px solid var(--color-font-label);
-      border-radius: 2px;
-      transition: border-color 0.2s ease;
-    }
+    width: 18px;
+    height: 18px;
+    border: 1.5px solid var(--color-font-label);
+    border-radius: 50%;
+    transition:
+      border-color 150ms,
+      background-color 150ms;
   }
-  .icon {
-    border-radius: 2px;
-    transform: scale(0);
-    transition: 0.3s ease;
-    transition-property: transform;
-    // opacity: 0;
+  .container::after {
+    position: absolute;
+    inset: 4px;
+    content: '';
+    border-radius: 50%;
+    background: var(--color-accent-on, #111);
+    opacity: 0;
   }
-
+  .input:checked + .container {
+    border-color: var(--color-primary);
+    background: var(--color-primary);
+  }
+  .input:checked + .container::after {
+    opacity: 1;
+  }
+  .input:focus-visible + .container {
+    outline: var(--focus-ring);
+    outline-offset: -2px;
+  }
   .label {
-    flex: auto;
-    margin-left: 6px;
-    font-size: 14px;
+    font-size: var(--text-body, 14px);
+    font-weight: 450;
     line-height: 1.5;
-    cursor: pointer;
+  }
+  .disabled {
+    opacity: 0.45;
+  }
+  .disabled .content {
+    cursor: not-allowed;
   }
 </style>

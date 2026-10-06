@@ -12,6 +12,8 @@ import { appState } from '@/app'
 import { workers } from '@/worker'
 
 import { getCachedLyricInfo, saveLyricInfo } from './shared'
+import { canUseFastLink, resolveFastLink } from './fastLink'
+import { getFastLinkId } from './fastLinkCore'
 
 export const getMusicUrlByExtSource = async ({
   musicInfo,
@@ -54,6 +56,16 @@ export const getMusicUrl = async ({
 }): Promise<AnyListen.IPCMusic.MusicUrlInfo> => {
   const targetQuality = quality ?? appState.appSetting['player.playQuality']
   const id = buildMusicCacheId(musicInfo, targetQuality)
+  if (canUseFastLink(musicInfo, targetQuality)) {
+    return resolveFastLink(getFastLinkId(musicInfo, targetQuality)!, isRefresh, async () => {
+      const info = await getMusicUrlResource({
+        musicInfo,
+        quality: targetQuality,
+        type: getFileType(targetQuality),
+      })
+      return { quality: info.quality, url: info.url, isFromCache: false }
+    })
+  }
   const cachedUrl = await workers.dbService.getMusicUrl(id)
   if (cachedUrl && !isRefresh) return { isFromCache: true, quality: targetQuality, url: cachedUrl }
   const info = await getMusicUrlResource({
@@ -110,7 +122,7 @@ export const getMusicPicUrl = async ({
       url: musicInfo.meta.picUrl,
     }
   }
-  const url = await getMusicPicResource({ musicInfo })
+  const url = await getMusicPicResource({ musicInfo, excludedUrl: isRefresh ? musicInfo.meta.picUrl : undefined })
   musicInfo.meta.picUrl = url
   return {
     url,
@@ -153,10 +165,9 @@ export const getLyricInfo = async ({
   listId?: string | null
   isRefresh?: boolean
 }): Promise<AnyListen.IPCMusic.MusicLyricInfo> => {
-  const [remote, local] = await Promise.all([
-    getMusicLyricResource({ musicInfo }).catch(() => null),
-    getCachedLyricInfo(musicInfo),
-  ])
+  const local = await getCachedLyricInfo(musicInfo)
+  if (local && !isRefresh) return { info: local, isFromCache: true }
+  const remote = await getMusicLyricResource({ musicInfo }).catch(() => null)
   if (remote) {
     let isSave = true
     if (local) {

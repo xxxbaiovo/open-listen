@@ -63,6 +63,12 @@ export const pause = () => {
   lrc?.pause()
 }
 
+// Restore the lyric position without starting the audio player or leaving lyric timers running.
+export const syncPausedTime = (currentTime: number) => {
+  lrc?.play(currentTime)
+  lrc?.pause()
+}
+
 export const stop = () => {
   lrc?.setLyric('')
   setText('', -1)

@@ -1,0 +1,211 @@
+/* Shared surface tokens fall back to the selected theme, including custom themes. */
+html.web:not(.fullscreen) {
+  padding: 0;
+}
+html.web.fullscreen {
+  min-width: 0;
+  min-height: 0;
+}
+html,
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+:root {
+  color-scheme: var(--color-scheme, light);
+  --text-caption: 0.75rem;
+  --text-small: 0.8125rem;
+  --text-body: 0.875rem;
+  --text-section: 1rem;
+  --text-title: 1.75rem;
+  font-optical-sizing: auto;
+}
+:root:lang(zh-Hans) {
+  font-family: 'Inter Variable', 'Noto Sans SC Variable', 'Microsoft YaHei UI', sans-serif;
+}
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+button {
+  transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
+}
+button:active:not(:disabled) {
+  scale: 0.96;
+}
+// Rows are navigation surfaces; scaling a whole row makes its text jump.
+.queue-row .track:active:not(:disabled) { scale: 1; }
+.home p {
+  text-wrap: pretty;
+}
+.home {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-font-label) transparent;
+}
+.custom-scrollbar {
+  background-color: transparent;
+}
+.custom-scrollbar .custom-scrollbar-thumb {
+  background-color: var(--color-font-label);
+  opacity: 0.35;
+}
+.custom-scrollbar .custom-scrollbar-thumb:hover {
+  opacity: 0.6;
+}
+#root {
+  border-radius: 0;
+  box-shadow: none;
+}
+#container {
+  box-shadow: none;
+}
+:root {
+  --focus-ring: 2px solid currentColor;
+}
+:root[data-input-method='pointer'] {
+  --focus-ring: none;
+}
+@media (forced-colors: active) {
+  :root:not([data-input-method='pointer']) {
+    --focus-ring: 2px solid CanvasText;
+  }
+}
+button,
+a,
+summary,
+select,
+[tabindex]:not(input, textarea, [contenteditable]) {
+  &:focus {
+    outline: none !important;
+  }
+  &:focus-visible {
+    // Keep the indicator inside scrollable tabs and lists, and follow each control's color.
+    outline: var(--focus-ring) !important;
+    outline-offset: -2px !important;
+  }
+}
+input:focus,
+textarea:focus,
+[contenteditable='true']:focus {
+  outline: none !important;
+  outline-offset: 0;
+}
+input,
+textarea,
+.select {
+  user-select: text;
+}
+button {
+  touch-action: manipulation;
+}
+button:disabled {
+  cursor: not-allowed;
+}
+::selection {
+  color: var(--color-accent-on, #111);
+  background: var(--color-primary);
+}
+.search-area .search-input {
+  height: 46px;
+  .content {
+    background: var(--color-surface-raised, var(--color-button-background));
+    border-radius: 28px;
+    border: 1px solid transparent;
+    transition:
+      background-color 150ms,
+      border-color 150ms;
+  }
+  .content:hover {
+    background: var(--color-button-background-hover);
+  }
+  .content:focus-within {
+    border-color: transparent;
+    background: var(--color-button-background-hover);
+  }
+  .content.active {
+    background: var(--color-surface-raised, var(--color-content-background));
+    box-shadow: none;
+    border-radius: 28px;
+  }
+  .content .form {
+    height: 44px;
+    padding: 0 8px;
+    align-items: center;
+    gap: 4px;
+  }
+  .content .form input {
+    font-size: 15px;
+    color: var(--color-font);
+  }
+  .content .form input::placeholder {
+    color: var(--color-font-label);
+  }
+  .content .form button {
+    color: var(--color-font-label);
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    padding: 7px;
+  }
+  .content .form .search-submit {
+    order: -1;
+    color: var(--color-font);
+    border-radius: 50%;
+  }
+  .content .list-item {
+    padding: 10px 16px;
+  }
+}
+#app-right {
+  container-type: inline-size;
+}
+#app-right > .view {
+  min-height: 0;
+}
+.player {
+  flex: none;
+  background: var(--color-app-background);
+  .bg {
+    box-shadow: none;
+    background: var(--color-app-background);
+    opacity: 1;
+  }
+  .middle-play-progress {
+    color: var(--color-font-label);
+    font-variant-numeric: tabular-nums;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  button:active:not(:disabled) {
+    scale: none;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+@media (max-width: 700px) {
+  .search-area .search-input .content .form input {
+    font-size: 16px;
+  }
+  .window-controls .control .btn {
+    width: 30px;
+  }
+}
+
+.theme-changing *,
+.theme-changing *::before,
+.theme-changing *::after {
+  transition: none !important;
+}

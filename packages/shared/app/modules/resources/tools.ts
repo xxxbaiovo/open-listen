@@ -1,4 +1,5 @@
 import { findMusic as findMusicByExt } from './search/music'
+import { withAbortSignal } from '@any-listen/common/abort'
 import { buildExtSourceId, getExtSource, getSourceAllExtSourceIds } from './utils'
 
 const findSourceMusic = async <T>(
@@ -9,21 +10,23 @@ const findSourceMusic = async <T>(
     interval: string | null
   },
   handler: (info: AnyListen.Music.MusicInfoOnline) => Promise<T>,
-  excludeList: string[] = []
+  excludeList: string[] = [],
+  signal?: AbortSignal
 ): Promise<T> => {
+  signal?.throwIfAborted()
   const source = getExtSource('musicSearch', excludeList)
   // console.log('excludeList', excludeList, source)
   if (!source) throw new Error('Get url failed, no source')
-  const music = await findMusicByExt({ extensionId: source.extensionId, source: source.id, ...info })
+  const music = await withAbortSignal(findMusicByExt({ extensionId: source.extensionId, source: source.id, ...info }), signal)
   if (music) {
     try {
-      return await handler(music)
+      return await withAbortSignal(handler(music), signal)
     } catch (e) {
       console.error(e)
     }
   }
   excludeList.push(buildExtSourceId(source.extensionId, source.id))
-  return findSourceMusic(info, handler, excludeList)
+  return findSourceMusic(info, handler, excludeList, signal)
 }
 
 const handleFindMusic = async <T>(
@@ -35,8 +38,10 @@ const handleFindMusic = async <T>(
     rawName?: string
     source?: string
   },
-  handler: (info: AnyListen.Music.MusicInfoOnline) => Promise<T>
+  handler: (info: AnyListen.Music.MusicInfoOnline) => Promise<T>,
+  signal?: AbortSignal
 ) => {
+  signal?.throwIfAborted()
   const excludeList: string[] = musicInfo.source ? getSourceAllExtSourceIds('musicSearch', musicInfo.source) : []
   try {
     return await findSourceMusic<T>(
@@ -47,7 +52,7 @@ const handleFindMusic = async <T>(
         interval: musicInfo.interval,
       },
       handler,
-      [...excludeList]
+      [...excludeList], signal
     )
   } catch {}
   if (musicInfo.name.includes('-')) {
@@ -61,7 +66,7 @@ const handleFindMusic = async <T>(
           interval: musicInfo.interval,
         },
         handler,
-        [...excludeList]
+        [...excludeList], signal
       )
     } catch {}
     try {
@@ -73,7 +78,7 @@ const handleFindMusic = async <T>(
           interval: musicInfo.interval,
         },
         handler,
-        [...excludeList]
+        [...excludeList], signal
       )
     } catch {}
   }
@@ -92,7 +97,7 @@ const handleFindMusic = async <T>(
               interval: musicInfo.interval,
             },
             handler,
-            [...excludeList]
+            [...excludeList], signal
           )
         } catch {}
         try {
@@ -104,7 +109,7 @@ const handleFindMusic = async <T>(
               interval: musicInfo.interval,
             },
             handler,
-            [...excludeList]
+            [...excludeList], signal
           )
         } catch {}
       } else {
@@ -117,7 +122,7 @@ const handleFindMusic = async <T>(
               interval: musicInfo.interval,
             },
             handler,
-            [...excludeList]
+            [...excludeList], signal
           )
         } catch {}
       }
@@ -129,7 +134,8 @@ const handleFindMusic = async <T>(
 
 const findMusicByLocal = async <T>(
   musicInfo: AnyListen.Music.MusicInfoLocal,
-  handler: (info: AnyListen.Music.MusicInfoOnline) => Promise<T>
+  handler: (info: AnyListen.Music.MusicInfoOnline) => Promise<T>,
+  signal?: AbortSignal
 ) => {
   return handleFindMusic(
     {
@@ -139,13 +145,14 @@ const findMusicByLocal = async <T>(
       interval: musicInfo.interval,
       rawName: musicInfo.meta.filePath.split(/\/|\\/).at(-1),
     },
-    handler
+    handler, signal
   )
 }
 
 const findMusicByOnline = async <T>(
   musicInfo: AnyListen.Music.MusicInfoOnline,
-  handler: (info: AnyListen.Music.MusicInfoOnline) => Promise<T>
+  handler: (info: AnyListen.Music.MusicInfoOnline) => Promise<T>,
+  signal?: AbortSignal
 ) => {
   return handleFindMusic(
     {
@@ -156,21 +163,23 @@ const findMusicByOnline = async <T>(
       rawName: musicInfo.meta.fileName,
       source: musicInfo.meta.source,
     },
-    handler
+    handler, signal
   )
 }
 
 export const findMusic = async <T>(
   musicInfo: AnyListen.Music.MusicInfo,
-  handler: (info: AnyListen.Music.MusicInfoOnline) => Promise<T>
+  handler: (info: AnyListen.Music.MusicInfoOnline) => Promise<T>,
+  signal?: AbortSignal
 ) => {
+  signal?.throwIfAborted()
   if (musicInfo.isLocal) {
     return findMusicByLocal(musicInfo, async (info) => {
       return handler(info)
-    })
+    }, signal)
   }
   try {
-    return await handler(musicInfo)
+    return await withAbortSignal(handler(musicInfo), signal)
   } catch {}
-  return findMusicByOnline(musicInfo, handler)
+  return findMusicByOnline(musicInfo, handler, signal)
 }

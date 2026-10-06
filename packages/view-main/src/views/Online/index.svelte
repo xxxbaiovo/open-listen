@@ -54,11 +54,21 @@
 
 <style lang="less">
   .container {
+    container-type: inline-size;
+    container-name: online-view;
     // padding: 10px 15px;
     display: flex;
     flex-flow: column nowrap;
     > :global(div) {
       min-height: 0;
+    }
+  }
+  @container online-view (max-width: 650px) {
+    .container > :global(.online-search-music),
+    .container > :global(.online-songlist-list) {
+      flex-direction: column;
+      gap: 8px;
+      padding-top: 8px;
     }
   }
 </style>

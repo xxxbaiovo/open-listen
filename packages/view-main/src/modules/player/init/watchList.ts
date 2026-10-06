@@ -275,6 +275,9 @@ export const initWatchList = () => {
           if (playerState.playInfo.historyIndex >= 0) updatePlayHistoryIndex(-1)
         })
       )
+      unregistered.add(onSettingChanged('player.shuffle', () => {
+        if (playerState.playInfo.historyIndex >= 0) updatePlayHistoryIndex(-1)
+      }))
 
       unregistered.add(dislikeListEvent.on('updated', updateDislikeIds))
 

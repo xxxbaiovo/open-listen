@@ -6,6 +6,7 @@
   import type { ListInfo } from './type'
   import { updateSetting } from '@/modules/setting/store/action'
   import { getRandom } from '@/shared'
+  import { getPlaylistDuration } from '@/shared/playlistDuration'
   import type { ComponentExports } from 'svelte'
   import MiniHeader from './MiniHeader.svelte'
   import Loading from '@/components/base/Loading.svelte'
@@ -33,7 +34,7 @@
     onsave?: () => Promise<void>
     onreload?: () => void
   } = $props()
-  let multimode = $state(false)
+  let durationSeconds = $derived(loading || error ? null : getPlaylistDuration(list))
   let finding = $state(false)
   let duplicate = $state(false)
   let listsort = $state(false)
@@ -58,16 +59,12 @@
         musiccount={list.length}
         {source}
         saveable={listinfo.saveable}
-        {multimode}
         {finding}
         onfind={() => {
           finding = !finding
         }}
         onduplicate={() => {
           duplicate = true
-        }}
-        onmulti={() => {
-          multimode = !multimode
         }}
         onplay={() => {
           void playMusic(listinfo.id, list, list[0], source, getListMetaInfo(listinfo), true)
@@ -89,19 +86,16 @@
       <Header
         disabled={loading || error}
         {listinfo}
+        {durationSeconds}
         musiccount={list.length}
         {source}
         saveable={listinfo.saveable}
-        {multimode}
         {finding}
         onfind={() => {
           finding = !finding
         }}
         onduplicate={() => {
           duplicate = true
-        }}
-        onmulti={() => {
-          multimode = !multimode
         }}
         onplay={() => {
           void playMusic(listinfo.id, list, list[0], source, getListMetaInfo(listinfo), true)
@@ -128,7 +122,6 @@
     {source}
     {onscroll}
     bind:finding
-    bind:multimode
     bind:duplicate
     bind:listsort
     loaded={!loading && !error}

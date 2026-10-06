@@ -10,6 +10,7 @@
     value = $bindable(''),
     type = 'text',
     id,
+    'aria-label': arialabel,
     trim = false,
     stopcontenteventpropagation = true,
     autopaste = true,
@@ -23,6 +24,7 @@
     autoflex = false,
   }: {
     id?: string
+    'aria-label'?: string
     class?: string
     min?: boolean
     placeholder?: string
@@ -99,6 +101,7 @@
   bind:this={domInput}
   class={['input', className, { min, autoflex }]}
   {id}
+  aria-label={arialabel}
   {type}
   {placeholder}
   {value}
@@ -125,14 +128,16 @@
   .input {
     display: inline-block;
     width: var(--width, auto);
-    padding: 5px 8px;
+    padding: 10px 12px;
     font-size: 14px;
     color: var(--color-button-font);
     outline: none;
     background-color: var(--color-primary-background);
-    border: none;
-    border-radius: @form-radius;
-    transition: background-color 0.2s ease;
+    border: 1px solid var(--color-border);
+    border-radius: 7px;
+    transition:
+      background-color 150ms,
+      border-color 150ms;
 
     &::-webkit-outer-spin-button,
     &::-webkit-inner-spin-button {

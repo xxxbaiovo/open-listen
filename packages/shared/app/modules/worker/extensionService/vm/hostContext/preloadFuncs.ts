@@ -1,3 +1,5 @@
+import { nativeMusicSearch } from '../../nativeSearch'
+
 import { contextState } from './state'
 
 export const callPreload = <T extends keyof AnyListen.ExtensionVM.PreloadCallActions>(
@@ -51,6 +53,10 @@ export const resourceAction = async <T extends keyof AnyListen.IPCExtension.Reso
 ): Promise<Awaited<ReturnType<AnyListen.IPCExtension.ResourceAction[T]>>> => {
   const vmContext = contextState.vmContexts.get(params.extensionId)
   if (!vmContext) throw new Error('extension not found')
+  if (action === 'musicSearch') {
+    const result = await nativeMusicSearch(vmContext.extension, params as AnyListen.IPCExtension.MusicSearchParams)
+    if (result) return result as Awaited<ReturnType<AnyListen.IPCExtension.ResourceAction[T]>>
+  }
   return vmContext.preloadFuncs.resourceAction(action, params)
 }
 

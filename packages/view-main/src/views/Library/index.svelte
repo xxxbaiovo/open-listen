@@ -98,14 +98,17 @@
 
   $effect(() => {
     const id = $query.id
+    let disposed = false
     if (id != currentId) {
       currentId = id
       untrack(() => {
         const musicId = $query.mid
         if (!id) return
         void Promise.all([getListMusics(id), getListScrollPosition(id)]).then(([_list, pos]) => {
-          list = _list
+          if (disposed || currentId !== id) return
+          list = [..._list]
           void tick().then(() => {
+            if (disposed || currentId !== id) return
             let idx = -1
             if (musicId) {
               idx = _list.findIndex((m) => m.id == musicId)
@@ -123,17 +126,20 @@
     const unsub = musicLibraryEvent.on('listMusicChanged', (ids) => {
       if (!ids.includes(id) || !userListExist(id)) return
       void getListMusics(id).then((_list) => {
+        if (disposed || currentId !== id) return
         list = [..._list]
       })
     })
     const unsub2 = musicLibraryEvent.on('listMusicUpdated', (updateInfo) => {
       if (!updateInfo.has(id) || !userListExist(id)) return
       void getListMusics(id).then((_list) => {
+        if (disposed || currentId !== id) return
         list = [..._list]
       })
     })
 
     return () => {
+      disposed = true
       unsub()
       unsub2()
     }

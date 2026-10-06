@@ -23,6 +23,7 @@ export const registerKeyEvent = () => {
           event &&
           hotkeyState.config.local.enable &&
           hotkeyState.config.local.keys[key] &&
+          hotkeyState.config.local.keys[key] !== 'showMusicComment' &&
           (key != 'escape' || !(event.target as HTMLElement).classList.contains('ignore-esc'))
         ) {
           // console.log(key, eventKey, type, keys, isEditing)

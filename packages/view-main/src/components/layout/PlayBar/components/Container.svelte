@@ -4,13 +4,15 @@
   let {
     children,
     padding,
+    stacked = false
   }: {
     children: Snippet
     padding?: boolean
+    stacked?: boolean
   } = $props()
 </script>
 
-<div class="player">
+<div class="player" class:stacked>
   <div class="bg"></div>
   <div class="player-inner" class:padding>
     {@render children()}
@@ -80,6 +82,39 @@
     transition-property: opacity;
     &.padding {
       padding-right: 10px;
+    }
+  }
+  .player.stacked {
+    --player-icon-size: 16px;
+    --player-main-button-size: 32px;
+    --player-button-size: 32px;
+    --player-indicator-size: 4px;
+    --player-control-row-height: 32px;
+    height: 88px;
+  }
+  .player.stacked .player-inner {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 40%) minmax(0, 1fr);
+    gap: 0;
+    padding: 0 16px;
+  }
+  @media (max-width: 1000px) {
+    .player.stacked .player-inner {
+      grid-template-columns: minmax(0, 1fr) minmax(208px, 1.25fr) minmax(0, 1fr);
+      gap: 8px;
+      padding-right: 12px;
+      padding-left: 12px;
+    }
+  }
+  @media (max-width: 700px) {
+    .player.stacked {
+      height: 144px;
+    }
+    .player.stacked .player-inner {
+      grid-template-columns: minmax(0, 1fr) auto;
+      grid-template-rows: 44px 80px;
+      gap: 6px 8px;
+      padding: 8px 12px;
     }
   }
 </style>

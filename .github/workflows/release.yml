@@ -1,62 +1,39 @@
-name: Release
+name: Open Listen Windows Release
 
 on:
   push:
-    tags:
-      - 'desktop-v*'
-      - 'webserver-v*'
-env:
-  DESKTOP_REPO: any-listen-desktop
-  WEBSERVER_REPO: any-listen-web-server-native-lib
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
-  sync-desktop-app:
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref_name, 'desktop-')
+  windows:
+    runs-on: windows-latest
+    env:
+      DESKTOP_ONLY: '1'
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
     steps:
-      - name: Checkout desktop app
-        uses: actions/checkout@v6
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
         with:
-          repository: any-listen/${{ env.DESKTOP_REPO }}
-          token: ${{ secrets.GH_DESKTOP_PAT }}
-
-      - name: Checkout monorepo
-        uses: actions/checkout@v6
-        with:
-          path: any-listen
-          token: ${{ github.token }}
-
-      - name: Push Code
+          node-version: '24'
+          cache: pnpm
+      - run: node scripts/verify-release.mjs --source-only
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build:desktop
+      - run: node scripts/verify-release.mjs
+      - name: Create draft release with complete update artifacts
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          git config user.name "lyswhut"
-          git config user.email "lyswhut@qq.com"
-          git add .
-          tag_formatted=$(echo ${{ github.ref_name }} | sed 's/desktop-v\?//')
-          git commit -m "Release v$tag_formatted"
-          git remote set-url origin https://x-access-token:${{ secrets.GH_DESKTOP_PAT }}@github.com/any-listen/${{ env.DESKTOP_REPO }}.git
-          git push origin main
-
-  sync-web-server:
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref_name, 'webserver-')
-    steps:
-      - name: Checkout web server
-        uses: actions/checkout@v6
-        with:
-          repository: any-listen/${{ env.WEBSERVER_REPO }}
-          submodules: 'true'
-          token: ${{ secrets.GH_WEB_SERVER_PAT }}
-
-      - name: Sync code
-        run: |
-          git submodule update --remote
-
-      - name: Push Code
-        run: |
-          git config user.name "lyswhut"
-          git config user.email "lyswhut@qq.com"
-          git add .
-          tag_formatted=$(echo ${{ github.ref_name }} | sed 's/webserver-v\?//')
-          git commit -m "release: v$tag_formatted"
-          git remote set-url origin https://x-access-token:${{ secrets.GH_WEB_SERVER_PAT }}@github.com/any-listen/${{ env.WEBSERVER_REPO }}.git
-          git push origin main
+          $assets = @(Get-ChildItem build/*-x64-Setup.exe, build/*-x64-Setup.exe.blockmap, build/latest.yml | ForEach-Object FullName)
+          $assets += (Resolve-Path packages/desktop/publish/version.json).Path
+          gh release create "$env:GITHUB_REF_NAME" @assets --verify-tag --draft --title "Open Listen $env:GITHUB_REF_NAME" --notes-file packages/desktop/publish/changeLog.md
+          if ($LASTEXITCODE -ne 0) { throw 'Release creation failed' }

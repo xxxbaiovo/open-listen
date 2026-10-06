@@ -1,55 +1,32 @@
 <script lang="ts">
-  import Checkbox from '@/components/base/Checkbox.svelte'
+  import SvgIcon from '@/components/base/SvgIcon.svelte'
   import { t } from '@/plugins/i18n'
-  let {
-    multimode,
-    picwidth,
-    selectall,
-    onselectall,
-    disabledselect,
-  }: {
-    multimode: boolean
-    selectall: boolean
-    picwidth: number
-    disabledselect?: boolean
-    onselectall: (all: boolean) => void
-  } = $props()
-  // console.log(params)
+
 </script>
 
 <div class="header">
-  <div class="num" style={`width:${picwidth}px;`}>
-    {#if multimode}
-      <Checkbox
-        arialabel={$t('select_all')}
-        checked={selectall}
-        id="music_list_select_all_checkbox"
-        disabled={disabledselect}
-        onchange={() => {
-          onselectall(!selectall)
-        }}
-      />
-    {:else}
-      #
-    {/if}
+  <div class="num">
+    #
   </div>
-  <span style="flex: auto;">{$t('music_name')}</span>
-  <span style="width: 22%;">{$t('music_singer')}</span>
-  <span style="width: 22%;">{$t('music_album')}</span>
-  <span style="width: 9%;">{$t('music_time')}</span>
+  <span class="title">{$t('music_name')}</span>
+  <span class="album">{$t('music_album')}</span>
+  <span class="time" role="img" aria-label={$t('music_time')} title={$t('music_time')}>
+    <SvgIcon name="clock" />
+  </span>
 </div>
 
 <style lang="less">
   .header {
-    display: flex;
+    display: grid;
     flex: none;
-    flex-flow: row nowrap;
-    gap: 10px;
+    grid-template-columns: 32px minmax(0, 1fr) minmax(100px, 26%) 64px;
+    gap: 14px;
     align-items: center;
-    height: 36px;
+    height: 38px;
     padding: 0 12px;
-    // border-bottom: 1px solid var(--color-border);
-    font-size: 12px;
+    margin: 0 22px 6px;
+    border-bottom: 1px solid var(--color-border);
+    font-size: 13px;
     color: var(--color-font-label);
 
     :global(.checkbox) {
@@ -57,12 +34,31 @@
     }
   }
   .num {
-    .nobreak();
-    .center();
-
     display: flex;
     align-items: center;
     justify-content: center;
-    // color: var(--color-font-label);
+    font-variant-numeric: tabular-nums;
+  }
+  .time {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 2px;
+  }
+  .time :global(svg) {
+    width: 17px;
+    height: 17px;
+  }
+  @container (max-width: 600px) {
+    .header {
+      grid-template-columns: 28px minmax(0, 1fr) 48px;
+      gap: 10px;
+      padding: 0 8px;
+      margin-right: 10px;
+      margin-left: 10px;
+    }
+    .album {
+      display: none;
+    }
   }
 </style>

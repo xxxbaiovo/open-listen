@@ -1,9 +1,9 @@
 {
   "name": "desktop",
-  "version": "0.9.0",
+  "version": "0.9.1",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/any-listen/any-listen-desktop.git"
+    "url": "git+https://github.com/xxxbaiovo/open-listen.git"
   },
   "main": "build-config/vite.config.ts",
   "scripts": {

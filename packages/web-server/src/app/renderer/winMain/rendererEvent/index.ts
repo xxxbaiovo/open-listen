@@ -19,7 +19,7 @@ import { createExposeTheme, createServerTheme } from './theme'
 
 export type ExposeServerFunctions = Omit<
   AnyListen.IPC.ClientIPCActions,
-  'winShow' | 'hotKeyDown' | 'showMessageBox' | 'showInputBox' | 'showOpenBox' | 'showSaveBox' | 'fullscreen'
+  'winShow' | 'hotKeyDown' | 'showMessageBox' | 'showInputBox' | 'showOpenBox' | 'showSaveBox' | 'fullscreen' | 'maximized'
 >
 
 export type ExposeClientFunctions = Omit<
@@ -27,6 +27,8 @@ export type ExposeClientFunctions = Omit<
   | 'closeWindow'
   | 'exitApp'
   | 'minWindow'
+  | 'maximizeWindow'
+  | 'resizeWindow'
   | 'fullscreenWindow'
   | 'getHotkeyStatus'
   | 'createDesktopLyricProcess'

@@ -3,9 +3,10 @@
   import { extT } from '@/modules/extension/i18n'
   import { resourceList } from '@/modules/extension/reactive.svelte'
   import { t } from '@/plugins/i18n'
+  import { listCreationCopy } from '../copy'
   let {
     value = $bindable(),
-    disabled,
+    disabled
   }: {
     value: AnyListen.Extension.ListProviderResource | null
     disabled?: boolean
@@ -17,7 +18,7 @@
       name: $extT(p.extensionId, p.name),
       extensionId: p.extensionId,
       source: p.id,
-      provider: p,
+      provider: p
     }))
   )
 </script>
@@ -37,11 +38,18 @@
           value = item.provider
         }}
       />
+    {:else}
+      <p class="empty">{$listCreationCopy.noSources}</p>
     {/each}
   </div>
 </div>
 
 <style lang="less">
+  .empty {
+    color: var(--color-font-label);
+    font-size: 13px;
+    line-height: 1.5;
+  }
   .container {
     display: flex;
     flex-flow: column wrap;

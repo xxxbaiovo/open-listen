@@ -4,7 +4,7 @@
 </script>
 
 <div class="icon">
-  <MusicHeartBtn musicinfo={$playMusicInfo?.musicInfo} link />
+  <MusicHeartBtn musicinfo={$playMusicInfo?.musicInfo} link circle />
 </div>
 
 <style lang="less">

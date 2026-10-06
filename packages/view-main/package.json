@@ -13,6 +13,7 @@
     "@any-listen/common": "workspace:@shared/common@*",
     "@any-listen/i18n": "workspace:@shared/i18n@*",
     "@any-listen/web": "workspace:@shared/web@*",
+    "@fontsource-variable/noto-sans-sc": "5.3.0",
     "dompurify": "^3.4.16",
     "hast-util-to-html": "^9.0.5",
     "marked": "^18.0.14",

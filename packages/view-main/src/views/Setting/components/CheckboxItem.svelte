@@ -19,7 +19,7 @@
 </script>
 
 <div class="settings-item-checkbox">
-  <Checkbox label={name} {id} {checked} {onchange} {disabled} />
+  <Checkbox label={name} {id} {checked} {onchange} {disabled} variant="switch" />
   {#if desc}
     <p class="settings-item-desc">{desc}</p>
   {/if}
@@ -27,7 +27,7 @@
 
 <style lang="less">
   .settings-item-checkbox {
-    margin-left: 16px;
+    margin-left: 0;
     :global {
       .checkbox {
         margin-bottom: 5px;

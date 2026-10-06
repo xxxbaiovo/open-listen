@@ -2,6 +2,7 @@ import { showMessageBox } from '@/components/apis/dialog/messageBox'
 import { showInputBox } from '@/components/apis/inputModal/inputBox'
 import { showNotifyBox } from '@/components/apis/notify'
 import { setFullScreen } from '@/modules/app/store/action'
+import { isWindowMaximized } from '@/shared/browser/windowState'
 import { extI18n } from '@/modules/extension/i18n'
 import { extensionState } from '@/modules/extension/store/state'
 
@@ -21,6 +22,9 @@ export default {
   },
   async fullscreen(isFullscreen) {
     setFullScreen(isFullscreen, true)
+  },
+  async maximized(isMaximized) {
+    isWindowMaximized.set(isMaximized)
   },
   async showMessageBox(key, extId, options) {
     if (options.modal) {

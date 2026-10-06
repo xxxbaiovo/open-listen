@@ -6,7 +6,6 @@
   import { hasDislike } from '@/modules/dislikeList/store/actions'
   import type { MenuSelectInfo } from '../type'
   import { showMusicAddModal } from '@/components/apis/musicAddModal'
-  import { showMusicCommentModal } from '@/components/apis/musicCommentModal'
   import { appState } from '@/modules/app/store/state'
   import { showMusicToggleModal } from './components/MusicToggleModal'
   import { showMusicSortModal } from './components/MusicSortModal'
@@ -37,7 +36,6 @@
     | 'detail'
     | 'sort'
     | 'toggleSource'
-    | 'comment'
     | 'copyName'
     | 'sourceDetail'
     | 'search'
@@ -71,7 +69,6 @@
           label: $t('user_list_music_menu__toggle_source'),
         },
       null,
-      { action: 'comment', label: $t('user_list_music_menu__comment') },
       { action: 'copyName', label: $t('user_list_music_menu__copy_name') },
       // { action: 'detail', label: $t('user_list_music_menu__detail') },
       null,
@@ -81,7 +78,7 @@
     if (import.meta.env.VITE_IS_DESKTOP) {
       if (selectInfo.musicInfo.isLocal) {
         // eslint-disable-next-line @typescript-eslint/prefer-optional-chain
-        newMenu.splice(newMenu.findIndex((m) => m && m.action === 'comment') + 1, 0, {
+        newMenu.splice(newMenu.findIndex((m) => m && m.action === 'copyName'), 0, {
           action: 'locate',
           disabled: notLocalMusic,
           label: $t('user_list_music_menu__locate'),
@@ -144,9 +141,6 @@
         })
         break
       }
-      case 'comment':
-        void showMusicCommentModal(selectInfo.musicInfo)
-        break
       case 'copyName':
         copyName(selectInfo.musicInfo)
         break

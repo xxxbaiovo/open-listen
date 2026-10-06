@@ -11,7 +11,7 @@
   } = $props()
 </script>
 
-<div class="settings-item">
+<div class="settings-item" class:setting-toggle={item.type === 'boolean'}>
   {#if item.type === 'component'}
     {#await item.component() then Component}
       {#if 'default' in Component}

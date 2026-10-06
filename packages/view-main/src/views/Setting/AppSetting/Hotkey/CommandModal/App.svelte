@@ -17,6 +17,9 @@
   let selectedCommand = $state('')
   let promise: ((result: string | null) => void) | null = null
   const commands = useCommands(true)
+  const availableCommands = $derived(
+    commands.val.filter((command) => command.extensionId || command.fullCommand !== 'showMusicComment')
+  )
   const listItemHeight = useListItemHeight(2.9)
 
   const close = () => {
@@ -25,7 +28,7 @@
   }
 
   const confirm = () => {
-    if (!selectedCommand) return
+    if (!availableCommands.some((command) => command.fullCommand === selectedCommand)) return
     visible = false
     promise?.(selectedCommand)
   }
@@ -57,7 +60,7 @@
   </div>
   <div class="main">
     <VirtualizedList
-      list={commands.val}
+      list={availableCommands}
       keyname="fullCommand"
       containerclass="list"
       itemheight={listItemHeight.val}
@@ -71,7 +74,9 @@
   </div>
   <div class="footer">
     <Btn onclick={close}>{$t('btn_cancel')}</Btn>
-    <Btn disabled={!selectedCommand} onclick={confirm}>{$t('btn_confirm')}</Btn>
+    <Btn disabled={!availableCommands.some((command) => command.fullCommand === selectedCommand)} onclick={confirm}
+      >{$t('btn_confirm')}</Btn
+    >
   </div>
 </Modal>
 

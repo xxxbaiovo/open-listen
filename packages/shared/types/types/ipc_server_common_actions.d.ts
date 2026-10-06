@@ -5,6 +5,10 @@ export declare type ServerCommonActions = WarpPromiseRecord<{
   inited: () => void
   /** 最小化窗口 */
   minWindow: () => void
+  /** 最大化或还原窗口 */
+  maximizeWindow: () => void
+  /** 无边框窗口边缘拖拽 */
+  resizeWindow: (phase: 'start' | 'move' | 'end', edge?: string, origin?: { x: number; y: number }) => void
   /** 关闭窗口 */
   closeWindow: (isForce?: boolean) => void
   /** 退出应用 */

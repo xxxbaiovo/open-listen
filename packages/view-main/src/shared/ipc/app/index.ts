@@ -23,6 +23,9 @@ export const setSystemThemeMode = async (isDark: boolean) => {
 export const minWindow = async () => {
   return ipc.minWindow()
 }
+export const maximizeWindow = async () => {
+  return ipc.maximizeWindow()
+}
 export const closeWindow = async () => {
   return ipc.closeWindow(false)
 }

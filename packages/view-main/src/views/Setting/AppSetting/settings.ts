@@ -5,7 +5,6 @@ import { showNotify } from '@/components/apis/notify'
 import { appEvent } from '@/modules/app/store/event'
 import { appState } from '@/modules/app/store/state'
 import { updateSetting } from '@/modules/setting/store/action'
-import { settingState } from '@/modules/setting/store/state'
 import { getThemeList } from '@/modules/theme/store/action'
 import { i18n, langList, type Message } from '@/plugins/i18n'
 
@@ -24,6 +23,7 @@ export interface EnumItem {
   name: keyof Message
   disabled?: boolean
   value: string | number
+  preview?: { background: string; accent: string }
 }
 interface SettingHr {
   type: 'hr'
@@ -84,24 +84,24 @@ export const settings: SettingListSection[] = [
         name: 'settings__basic_theme',
         type: 'radio',
         async asyncEnum() {
-          // t('settings__basic_theme_auto_desc')
-          const themeList = (await getThemeList()).themes.map((t) => ({ name: `theme_${t.id}` as keyof Message, value: t.id }))
-          // console.log(themeList)
-          return [...themeList, { name: 'theme_auto', value: 'auto' }]
+          return (await getThemeList()).themes
+            .filter((theme) => theme.id === 'midnight' || theme.id === 'grey')
+            .map((theme) => ({
+              name: theme.id === 'midnight' ? 'ui.mode_dark' : 'ui.mode_light',
+              value: theme.id,
+              preview: {
+                background: theme.config.extInfo['--color-app-background'],
+                accent: theme.config.themeColors['--color-primary'],
+              },
+            }))
         },
         onUpdate(value) {
-          if (value === 'auto') {
-            void updateSetting({
-              'theme.id': value,
-              'theme.lightId': settingState.setting['theme.id'] === 'black' ? undefined : settingState.setting['theme.id'],
-            })
-            showNotify(i18n.t('settings__basic_theme_auto_desc'))
-          } else {
-            void updateSetting({
-              'theme.id': value as string,
-              'theme.lightId': value === 'black' ? undefined : (value as string),
-            })
-          }
+          if (value !== 'midnight' && value !== 'grey') return
+          void updateSetting({
+            'theme.id': value,
+            'theme.lightId': 'grey',
+            'theme.darkId': 'midnight',
+          })
         },
       },
       {
@@ -158,9 +158,18 @@ export const settings: SettingListSection[] = [
           { value: 'middle', name: 'settings.basic.play_bar_style_middle' },
           { value: 'full', name: 'settings.basic.play_bar_style_full' },
           { value: 'centerControl', name: 'settings.basic.play_bar_style_center_control_btn' },
-          { value: 'centerControlMiddle', name: 'settings.basic.play_bar_style_center_control_middle_btn' },
-          { value: 'centerControlFull', name: 'settings.basic.play_bar_style_center_control_full_btn' },
-        ] satisfies Array<{ value: AnyListen.AppSetting['common.playBarProgressStyle']; name: keyof Message }>,
+          {
+            value: 'centerControlMiddle',
+            name: 'settings.basic.play_bar_style_center_control_middle_btn',
+          },
+          {
+            value: 'centerControlFull',
+            name: 'settings.basic.play_bar_style_center_control_full_btn',
+          },
+        ] satisfies Array<{
+          value: AnyListen.AppSetting['common.playBarProgressStyle']
+          name: keyof Message
+        }>,
       },
     ],
   },
@@ -256,74 +265,6 @@ export const settings: SettingListSection[] = [
         name: 'settings.player.media_device',
         type: 'component',
         component: async () => import('./MediaDevice.svelte'),
-      },
-    ],
-  },
-  {
-    id: 'playDetail',
-    name: 'settings.play_detail',
-    list: [
-      // t('settings.play_detail.cover_style_square')
-      {
-        field: 'playDetail.isDynamicBackground',
-        name: 'settings.play_detail.dynamic_background',
-        type: 'boolean',
-      },
-      {
-        field: 'playDetail.isDelayScroll',
-        name: 'settings.play_detail.delay_scroll',
-        type: 'boolean',
-      },
-      {
-        field: 'playDetail.isZoomActiveLrc',
-        name: 'settings.play_detail.zoom_active_lrc',
-        type: 'boolean',
-      },
-      {
-        field: 'playDetail.style.fontWeight',
-        name: 'settings.play_detail.style_font_weight',
-        type: 'boolean',
-      },
-      {
-        field: 'playDetail.coverStyle',
-        name: 'settings.play_detail.cover_style',
-        type: 'radio',
-        enum: [
-          { value: 'cd', name: 'settings.play_detail.cover_style_cd' },
-          { value: 'square', name: 'settings.play_detail.cover_style_square' },
-        ] satisfies Array<{ value: AnyListen.AppSetting['playDetail.coverStyle']; name: keyof Message }>,
-      },
-      {
-        field: 'playDetail.style.align',
-        name: 'settings.play_detail.style_align',
-        type: 'radio',
-        enum: [
-          { value: 'left', name: 'settings.play_detail.style_align_left' },
-          { value: 'center', name: 'settings.play_detail.style_align_center' },
-          { value: 'right', name: 'settings.play_detail.style_align_right' },
-        ] satisfies Array<{ value: AnyListen.AppSetting['playDetail.style.align']; name: keyof Message }>,
-      },
-    ],
-  },
-  {
-    id: 'list',
-    name: 'settings.list',
-    // t('settings.list.is_show_action_btn_desc')
-    list: [
-      {
-        field: 'list.isShowActionBtn',
-        name: 'settings.list.is_show_action_btn',
-        description: 'settings.list.is_show_action_btn_desc',
-        type: 'boolean',
-      },
-      {
-        field: 'list.addMusicLocationType',
-        name: 'settings.list.add_music_location_type',
-        type: 'radio',
-        enum: [
-          { value: 'top', name: 'settings.list.add_music_location_type_top' },
-          { value: 'bottom', name: 'settings.list.add_music_location_type_bottom' },
-        ] satisfies Array<{ value: AnyListen.AppSetting['list.addMusicLocationType']; name: keyof Message }>,
       },
     ],
   },
@@ -526,7 +467,7 @@ export const settings: SettingListSection[] = [
 ]
 
 if (import.meta.env.VITE_IS_DESKTOP) {
-  settings.splice(4, 0, {
+  settings.splice(settings.findIndex((section) => section.id === 'hotkey'), 0, {
     id: 'desktopLyric',
     // t('settings.desktop_lyric.style_font_weight_extended')
     name: 'settings.desktop_lyric',
@@ -587,7 +528,10 @@ if (import.meta.env.VITE_IS_DESKTOP) {
         enum: [
           { value: 'classic', name: 'settings.desktop_lyric.classic_mode' },
           { value: 'multiLine', name: 'settings.desktop_lyric.multiLine_mode' },
-        ] satisfies Array<{ value: AnyListen.AppSetting['desktopLyric.mode']; name: keyof Message }>,
+        ] satisfies Array<{
+          value: AnyListen.AppSetting['desktopLyric.mode']
+          name: keyof Message
+        }>,
       },
 
       {
@@ -627,7 +571,10 @@ if (import.meta.env.VITE_IS_DESKTOP) {
         enum: [
           { value: 'top', name: 'settings.desktop_lyric.style_align_top' },
           { value: 'bottom', name: 'settings.desktop_lyric.style_align_bottom' },
-        ] satisfies Array<{ value: AnyListen.AppSetting['desktopLyric.classic.style.align']; name: keyof Message }>,
+        ] satisfies Array<{
+          value: AnyListen.AppSetting['desktopLyric.classic.style.align']
+          name: keyof Message
+        }>,
       },
       // t('settings.desktop_lyric.style_align_x_right')
       {
@@ -639,7 +586,10 @@ if (import.meta.env.VITE_IS_DESKTOP) {
           { value: 'default', name: 'settings.desktop_lyric.style_align_x_default' },
           { value: 'left', name: 'settings.desktop_lyric.style_align_x_left' },
           { value: 'right', name: 'settings.desktop_lyric.style_align_x_right' },
-        ] satisfies Array<{ value: AnyListen.AppSetting['desktopLyric.classic.style.alignX']; name: keyof Message }>,
+        ] satisfies Array<{
+          value: AnyListen.AppSetting['desktopLyric.classic.style.alignX']
+          name: keyof Message
+        }>,
       },
       {
         name: 'settings.desktop_lyric.font',
@@ -697,7 +647,10 @@ if (import.meta.env.VITE_IS_DESKTOP) {
         enum: [
           { value: 'horizontal', name: 'settings.desktop_lyric.direction_horizontal' },
           { value: 'vertical', name: 'settings.desktop_lyric.direction_vertical' },
-        ] satisfies Array<{ value: AnyListen.AppSetting['desktopLyric.multiLine.direction']; name: keyof Message }>,
+        ] satisfies Array<{
+          value: AnyListen.AppSetting['desktopLyric.multiLine.direction']
+          name: keyof Message
+        }>,
       },
       {
         field: 'desktopLyric.multiLine.style.align',
@@ -707,7 +660,10 @@ if (import.meta.env.VITE_IS_DESKTOP) {
           { value: 'left', name: 'settings.desktop_lyric.style_align_left' },
           { value: 'center', name: 'settings.desktop_lyric.style_align_center' },
           { value: 'right', name: 'settings.desktop_lyric.style_align_right' },
-        ] satisfies Array<{ value: AnyListen.AppSetting['desktopLyric.multiLine.style.align']; name: keyof Message }>,
+        ] satisfies Array<{
+          value: AnyListen.AppSetting['desktopLyric.multiLine.style.align']
+          name: keyof Message
+        }>,
       },
       {
         field: 'desktopLyric.multiLine.scrollAlign',
@@ -716,7 +672,10 @@ if (import.meta.env.VITE_IS_DESKTOP) {
         enum: [
           { value: 'top', name: 'settings.desktop_lyric.scroll_align_top' },
           { value: 'center', name: 'settings.desktop_lyric.scroll_align_center' },
-        ] satisfies Array<{ value: AnyListen.AppSetting['desktopLyric.multiLine.scrollAlign']; name: keyof Message }>,
+        ] satisfies Array<{
+          value: AnyListen.AppSetting['desktopLyric.multiLine.scrollAlign']
+          name: keyof Message
+        }>,
       },
       {
         name: 'settings.desktop_lyric.line_gap',

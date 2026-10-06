@@ -11,17 +11,22 @@
   import { useHotkey } from './useHotkey.svelte'
   import SearchList from './components/SearchList.svelte'
   import DuplicateMusicModal from './components/DuplicateMusicModal/index.svelte'
-  import { type ComponentExports, onMount, untrack } from 'svelte'
-  import Empty from '@/components/material/Empty.svelte'
+  import { type ComponentExports, onMount } from 'svelte'
+  import Btn from '@/components/base/Btn.svelte'
+  import SvgIcon from '@/components/base/SvgIcon.svelte'
+  import { t } from '@/plugins/i18n'
+  import { push } from '@/plugins/routes'
+  import { userListsAll } from '@/modules/musicLibrary/reactive.svelte'
+  import { importLocalFile } from '@/components/layout/Aside/MyList/action'
   import ListSortModal from './components/ListSortModal.svelte'
   import { appEvent } from '@/modules/app/store/event'
   import { getListMetaInfo } from '../shared'
+  import { startPointerMusicDrag } from '@/shared/musicDrag.svelte'
 
   let {
     source,
     listinfo,
     list,
-    multimode = $bindable(),
     finding = $bindable(),
     duplicate = $bindable(),
     listsort = $bindable(),
@@ -31,7 +36,6 @@
     listinfo: ListInfo
     list: AnyListen.Music.MusicInfo[]
     source: AnyListen.Player.SourceType
-    multimode: boolean
     finding: boolean
     duplicate: boolean
     listsort: boolean
@@ -44,8 +48,8 @@
   let playingIndex = $derived(
     $playMusicInfo?.listId == listinfo.id ? list.findIndex((m) => m.id == $playMusicInfo.musicInfo.id) : -1
   )
-  let listItemHeight = useListItemHeight(3.2)
-  let picwidth = $derived(listItemHeight.val * 0.8)
+  let listItemHeight = useListItemHeight(3.5)
+  let picwidth = $derived(Math.round(listItemHeight.val * 0.7))
   let picStyle = $derived(`height:${picwidth}px; width:${picwidth}px;`)
   let activeIndex = $state(-1)
   let itv: number | null = null
@@ -72,35 +76,20 @@
     })
   }
   let select = useSelect({
-    get isShiftDown() {
-      return hotkey.isShiftDown
-    },
     get list() {
       return list
     },
   })
-  let hotkey = useHotkey({
+  useHotkey({
     getListEl() {
       return virtualizedList?.getListEl()
     },
     selectAll() {
-      multimode ||= true
       select.override([...list])
     },
   })
 
   let menu = $state<ComponentExports<typeof Menu> | null>(null)
-  $effect(() => {
-    if (multimode) {
-      untrack(() => {
-        const len = list.length
-        if (select.selectIndex < len) return
-        select.setSelectIndex(len ? len - 1 : 0)
-      })
-    } else {
-      select.clearSelect()
-    }
-  })
   $effect(() => {
     // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     list
@@ -130,15 +119,7 @@
   }
 </script>
 
-<Header
-  {multimode}
-  {picwidth}
-  selectall={list.length > 0 && select.list.length == list.length}
-  disabledselect={!list.length}
-  onselectall={(all) => {
-    select.override(all ? [...list] : [])
-  }}
-/>
+<Header />
 {#if list.length}
   <div class="container">
     <VirtualizedList
@@ -156,36 +137,34 @@
           {source}
           active={activeIndex == index}
           selected={select.list.includes(item)}
-          selectedactive={hotkey.isShiftDown && select.selectIndex == index}
+          selectionstart={select.list.includes(item) && !select.list.includes(list[index - 1])}
+          selectionend={select.list.includes(item) && !select.list.includes(list[index + 1])}
           {index}
           {picStyle}
           playing={playingIndex == index}
+          onpointerdown={(event) => startPointerMusicDrag(event, select.list.includes(item) ? select.list : [item])}
           oncontextmenu={(event) => {
             event.preventDefault()
             event.stopPropagation()
             activeIndex = index
+            if (!select.list.includes(item)) select.handleSelect(index)
             menu!.show(
               {
                 listId: listinfo.id,
                 musicInfo: item,
                 selectedList: select.list,
                 onRemoveAllSelected() {
-                  multimode = false
+                  select.clearSelect()
                 },
               },
               { x: event.pageX, y: event.pageY }
             )
           }}
-          onclick={(isKey) => {
-            if (multimode || hotkey.isKeyMultiKeyDown()) {
-              multimode ||= true
-              select.handleSelect(index)
-            } else {
-              select.setSelectIndex(index)
+          onclick={(isKey, event) => {
+            select.handleSelect(index, event)
+            if (!event.shiftKey && !event.ctrlKey && !event.metaKey) {
               void musicClick(list, listinfo.id, item, source, getListMetaInfo(listinfo))
-              if (isKey) {
-                void musicClick(list, listinfo.id, item, source, getListMetaInfo(listinfo))
-              }
+              if (isKey) void playMusic(listinfo.id, list, item, source, getListMetaInfo(listinfo))
             }
           }}
           onplay={() => {
@@ -206,12 +185,27 @@
         activeIndex = -1
       }}
       oncancelmulti={() => {
-        multimode = false
+        select.clearSelect()
       }}
     />
   </div>
 {:else if loaded}
-  <Empty />
+  <div class="empty-list">
+    <SvgIcon name="music" />
+    <h2>{$t('ui.empty_list')}</h2>
+    <p>{$t('ui.empty_list_description')}</p>
+    <div class="empty-actions">
+      {#if source === 'local' && ['default', 'general'].includes(listinfo.type)}
+        <Btn
+          onclick={async () => {
+            const target = $userListsAll.find((item) => item.id === listinfo.id)
+            if (target) return importLocalFile(target)
+          }}>{$t('ui.add_music')}</Btn
+        >
+      {/if}
+      <Btn outline onclick={async () => push('/settings', { type: 'extensions' })}>{$t('ui.extensions')}</Btn>
+    </div>
+  </div>
 {/if}
 <SearchList
   bind:visible={finding}
@@ -232,7 +226,50 @@
     flex: auto;
     min-height: 0;
     // padding: 0 5px;
-    margin: 0 6px;
+    margin: 0 22px 12px;
     overflow: hidden;
+  }
+  .empty-list {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    min-height: 150px;
+    padding: 24px;
+    overflow: auto;
+    text-align: center;
+  }
+  .empty-list > :global(svg) {
+    width: 38px;
+    height: 38px;
+    margin-bottom: 4px;
+    color: var(--color-font-label);
+  }
+  .empty-list h2 {
+    font-size: 20px;
+    font-weight: 700;
+  }
+  .empty-list p {
+    max-width: 400px;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--color-font-label);
+  }
+  .empty-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 6px;
+  }
+  .empty-actions :global(.btn) {
+    border-radius: 24px;
+  }
+  @container (max-width: 600px) {
+    .container {
+      margin: 0 10px 8px;
+    }
   }
 </style>

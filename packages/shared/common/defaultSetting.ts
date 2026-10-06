@@ -18,6 +18,7 @@ const defaultSetting: AnyListen.AppSetting = {
 
   'player.startupAutoPlay': false,
   'player.togglePlayMethod': 'listLoop',
+  'player.shuffle': false,
   'player.playQuality': '128k',
   'player.isShowTaskProgess': true,
   'player.volume': 1,
@@ -65,7 +66,7 @@ const defaultSetting: AnyListen.AppSetting = {
   'playDetail.style.fontWeight': true,
   'playDetail.isDelayScroll': true,
   'playDetail.isDynamicBackground': true,
-  'playDetail.coverStyle': 'cd',
+  'playDetail.coverStyle': 'square',
 
   'list.isShowActionBtn': true,
   'list.addMusicLocationType': 'top',
@@ -146,22 +147,12 @@ const defaultSetting: AnyListen.AppSetting = {
   'tray.themeId': 1,
 
   // 'theme.id': 'blue_plus',
-  'theme.id': 'blue2',
-  'theme.lightId': 'blue2',
-  'theme.darkId': 'black',
+  'theme.id': 'midnight',
+  'theme.lightId': 'grey',
+  'theme.darkId': 'midnight',
 
   'extension.onlineExtensionHost': '',
   'extension.ghMirrorHosts': 'https://ghproxy.net\nhttps://gh-proxy.com\nhttps://ghproxy.cn\nhttps://github.moeyy.xyz',
-}
-
-// 使用新年皮肤
-if (new Date().getMonth() < 2) {
-  defaultSetting['theme.id'] = 'happy_new_year'
-  defaultSetting['desktopLyric.multiLine.style.lyricPlayedColor'] = 'rgba(255, 57, 71, 1)'
-
-  defaultSetting['desktopLyric.classic.style.lyricUnplayColor'] = 'rgba(255, 57, 71, 1)'
-  defaultSetting['desktopLyric.classic.style.lyricPlayedColor'] = 'rgba(255, 242, 87, 1)'
-  defaultSetting['desktopLyric.classic.style.lyricShadowColor'] = 'rgba(111, 0, 0, 0.58)'
 }
 
 export default defaultSetting

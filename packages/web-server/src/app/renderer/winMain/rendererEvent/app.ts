@@ -6,6 +6,7 @@ import { proxyServerState } from '@any-listen/app/modules/proxyServer/state'
 import { appState, setSystemMode, updateSetting } from '@/app/app'
 import { executeCommand } from '@/app/modules/command'
 import { checkAllowPathError, fileSystemAction } from '@/app/modules/fileSystem'
+import { migrateLegacyAutoTheme } from '@/app/modules/theme'
 import { socketEvent } from '@/modules/ipc/event'
 import { broadcast } from '@/modules/ipc/websocket'
 import { getClientInfos } from '@/shared/data'
@@ -29,6 +30,7 @@ export const createExposeApp = () => {
     },
     async setSystemThemeMode(event, isDark) {
       setSystemMode(isDark)
+      migrateLegacyAutoTheme()
     },
     async getAppInfo(event) {
       return {

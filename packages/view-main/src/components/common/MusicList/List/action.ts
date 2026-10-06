@@ -6,6 +6,9 @@ import { getListMusics, removeListMusics } from '@/modules/musicLibrary/actions'
 import { updateListMusicsPosition } from '@/modules/musicLibrary/store/actions'
 import { addPlayLaterMusic, playList, playOnlineList } from '@/modules/player/store/actions'
 import type { OnlineListMetaInfo } from '@/modules/player/store/playerActions'
+import { getCachedMusicPic } from '@/modules/player/store/playerRemoteAction'
+import { parseRequestKey } from '@/modules/resource/search/music/actions'
+import { rememberSearchTrack } from '@/modules/resource/search/recent.svelte'
 import { settingState } from '@/modules/setting/store/state'
 import { i18n } from '@/plugins/i18n'
 import { clipboardWriteText, openDirInExplorer } from '@/shared/ipc/app'
@@ -27,6 +30,20 @@ export const playOnlineListMusic = async (
 ) => {
   const idx = list.findIndex((m) => m.id == musicInfo.id)
   if (idx < 0) return
+  if (source === 'search') {
+    const request = parseRequestKey(listId)
+    if (request && typeof request.extId === 'string' && typeof request.source === 'string') {
+      rememberSearchTrack({
+        keyword: request.text,
+        sourceId: `${request.extId}_${request.source}`,
+        musicId: musicInfo.id,
+        title: musicInfo.name,
+        singer: musicInfo.singer,
+        picUrl: getCachedMusicPic(musicInfo.id) ?? musicInfo.meta.picUrl ?? undefined,
+        page: request.page,
+      })
+    }
+  }
   void playOnlineList(listId, list, idx, source, metaInfo, isClianHistory)
 }
 

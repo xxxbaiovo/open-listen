@@ -1,10 +1,12 @@
 <script lang="ts">
-  import SvgIcon from '@/components/base/SvgIcon.svelte'
   import Image from '@/components/base/Image.svelte'
   import type { MouseEventHandler } from 'svelte/elements'
   import { location, push, query, replace } from '@/plugins/routes'
   import { useFetchingListStatus, useListCover } from '@/modules/musicLibrary/reactive.svelte'
   import { LIST_PIC_ICON } from '@/shared/constants'
+  import { LIST_IDS } from '@any-listen/common/constants'
+  import { t } from '@/plugins/i18n'
+  import { musicDrag, canAddToPlaylist } from '@/shared/musicDrag.svelte'
   // console.log(querystring)
   let {
     listInfo,
@@ -13,7 +15,6 @@
     oncontextmenu,
   }: {
     listInfo: AnyListen.List.MyListInfo
-    index: number
     active?: boolean
     picStyle: string
     oncontextmenu?: MouseEventHandler<HTMLDivElement>
@@ -37,8 +38,13 @@
   class="container"
   class:active={$query.id == listInfo.id || active}
   class:fetching={fetching.val}
+  data-music-drop-id={canAddToPlaylist(listInfo) ? listInfo.id : undefined}
+  class:drop-target={musicDrag.targetId === listInfo.id && musicDrag.tracks.length > 0}
+  class:drop-unavailable={musicDrag.tracks.length > 0 && !canAddToPlaylist(listInfo)}
   role="button"
   aria-label={listInfo.name}
+  title={listInfo.name}
+  aria-current={$query.id == listInfo.id ? 'page' : undefined}
   data-ignore-tip
   tabindex="0"
   onkeydown={(event) => {
@@ -55,30 +61,35 @@
   onclick={handleSelect}
   {oncontextmenu}
 >
-  <div class="left" style={picStyle}>
+  <div class="left" class:liked={listInfo.id === LIST_IDS.LOVE} style={picStyle}>
     <Image src={listCover.val} icon={LIST_PIC_ICON[listInfo.id as keyof typeof LIST_PIC_ICON]} />
   </div>
   <div class="right">
     <span>{listInfo.name}</span>
     <div class="meta">
-      <span><SvgIcon name="music" />{listInfo.meta.songCount}</span>
+      <span>{$t('ui.playlist')} · {listInfo.meta.songCount}</span>
       <!-- <span><SvgIcon name="headphones" /> {listInfo.meta.playCount}</span> -->
     </div>
   </div>
 </div>
 
 <style lang="less">
+  .container.drop-target {
+    box-shadow: inset 0 0 0 2px #1ed760;
+    background: var(--color-button-background-hover);
+  }
+  .drop-unavailable { opacity: 0.4; }
   .container {
     position: relative;
     display: flex;
     flex-flow: row nowrap;
-    gap: 6px;
+    gap: 12px;
     align-items: center;
     height: 100%;
     padding: 6px;
     background-color: transparent;
     border-radius: @radius-border;
-    transition: 0.3s ease;
+    transition: 150ms;
     transition-property: color, background-color, opacity;
     &:not(.active) {
       &:hover {
@@ -89,6 +100,9 @@
   }
   .active {
     background-color: var(--color-primary-background);
+    .right > span {
+      color: var(--color-font);
+    }
   }
   .fetching {
     opacity: 0.5;
@@ -122,9 +136,10 @@
     display: flex;
     flex: auto;
     flex-flow: column nowrap;
-    gap: 2px;
+    gap: 5px;
     min-width: 0;
     font-size: 14px;
+    font-weight: 450;
     span {
       .mixin-ellipsis-1();
     }
@@ -134,7 +149,12 @@
     display: flex;
     flex-flow: row nowrap;
     gap: 12px;
-    font-size: 12px;
-    color: var(--color-300);
+    font-size: 13px;
+    color: var(--color-font-label);
+    font-weight: 400;
+  }
+  .liked :global(.pic.empty-pic) {
+    color: white;
+    background: #6953b5;
   }
 </style>

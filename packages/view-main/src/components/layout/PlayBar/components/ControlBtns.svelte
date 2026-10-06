@@ -2,11 +2,8 @@
   import TogglePlayModeBtn from '@/components/common/TogglePlayModeBtn.svelte'
   import VolumeBtn from '@/components/common/VolumeBtn.svelte'
   import PlaylistBtn from '@/components/common/PlaylistBtn/index.svelte'
-  // import CommentBtn from '@/components/common/CommentBtn.svelte'
   import PlayerMusicHeartBtn from '@/components/common/PlayerMusicHeartBtn.svelte'
-  // import CommentBtn from '@/components/common/CommentBtn.svelte'
   import DesktopLyricBtn from '@/components/common/DesktopLyricBtn/index.svelte'
-  // import PlaybackRateBtn from '@/components/common/PlaybackRateBtn.svelte'
 
   // import { t } from '@/plugins/i18n'
 </script>
@@ -27,13 +24,9 @@
   </button> -->
   <PlayerMusicHeartBtn />
   <PlaylistBtn />
-  <!-- <CommentBtn /> -->
-  <!-- <CommentBtn /> -->
   <VolumeBtn />
   <TogglePlayModeBtn />
   <DesktopLyricBtn />
-  <!-- <PlaybackRateBtn /> -->
-  <!-- <SoundEffectBtn /> -->
   <!-- <common-toggle-play-mode-btn />
   <common-list-add-modal v-model:show="isShowAddMusicTo" :music-info="playMusicInfo.musicInfo" /> -->
 </div>

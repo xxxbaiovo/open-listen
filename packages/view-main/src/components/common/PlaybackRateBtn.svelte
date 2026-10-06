@@ -91,7 +91,7 @@
     display: flex;
     flex-flow: column nowrap;
     gap: 8px;
-    width: 300px;
+    width: min(300px, calc(100vw - 52px));
     padding: 2px 3px;
 
     :global(.slider) {

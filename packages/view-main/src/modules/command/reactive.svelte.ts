@@ -7,7 +7,7 @@ import { extI18n, extI18nMessageChangedEvent } from '../extension/i18n'
 import { resourceList } from '../extension/reactive.svelte'
 import { extensionState } from '../extension/store/state'
 
-const allCommands = [...VIEW_MAIN_COMMANDS, ...MAIN_COMMANDS]
+const allCommands = [...VIEW_MAIN_COMMANDS, ...MAIN_COMMANDS].filter((command) => command !== 'showMusicComment')
 const excludedCommands: typeof allCommands = ['run', 'focusSearchInput']
 
 const visibleCommands = [...allCommands.filter((cmd) => !excludedCommands.includes(cmd))]

@@ -43,8 +43,8 @@ export const getMediaDevices = async () => {
       label: d.label || 'Default',
     }
   })
-  if (!devices.length) devices.push({ deviceId: 'default', label: 'Default' })
-  return devices
+  if (!devices.some((device) => device.deviceId === 'default')) devices.unshift({ deviceId: 'default', label: 'Default' })
+  return [...new Map(devices.map((device) => [device.deviceId, device])).values()]
 }
 
 export const requestMediaDevicePermission = async () => {

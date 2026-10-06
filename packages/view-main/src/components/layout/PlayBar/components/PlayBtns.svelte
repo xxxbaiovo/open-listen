@@ -2,79 +2,73 @@
   import { skipNext, skipPrev, togglePlay } from '@/modules/player/actions'
   import { playing } from '@/modules/player/reactive.svelte'
   import { t } from '@/plugins/i18n'
-  import { onDomSizeChanged } from '@any-listen/web'
-  import { onMount } from 'svelte'
-  let domContainer: HTMLDivElement | null = $state(null)
-  let iconSize = $state('42px')
-  let iconSize2 = $state('46px')
-
-  onMount(() => {
-    if (!domContainer) return
-    return onDomSizeChanged(domContainer, (width, height) => {
-      iconSize = `${Math.trunc(height * 0.52)}px`
-      iconSize2 = `${Math.trunc(height * 0.65)}px`
-    })
-  })
 </script>
 
-<div class="container" bind:this={domContainer}>
-  <button class="btn" aria-label={$t('player__prev')} onclick={async () => skipPrev()}>
-    <svg version="1.1" xmlns="http://www.w3.org/2000/svg" width={iconSize} height={iconSize} viewBox="0 0 24 24">
-      <use xlink:href="#icon-skip-prev" />
-    </svg>
+<div class="transport-buttons">
+  <button type="button" class="btn" aria-label={$t('player__prev')} onclick={async () => skipPrev()}>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><use xlink:href="#icon-skip-prev" /></svg>
   </button>
-  <button class="btn" aria-label={$playing ? $t('player__pause') : $t('player__play')} onclick={togglePlay}>
-    {#if $playing}
-      <svg version="1.1" xmlns="http://www.w3.org/2000/svg" width={iconSize2} height={iconSize2} viewBox="0 0 24 24">
-        <use xlink:href="#icon-pause" />
-      </svg>
-    {:else}
-      <svg version="1.1" xmlns="http://www.w3.org/2000/svg" width={iconSize2} height={iconSize2} viewBox="0 0 24 24">
-        <use xlink:href="#icon-play" />
-      </svg>
-    {/if}
+  <button
+    type="button"
+    class="btn main-play"
+    aria-label={$playing ? $t('player__pause') : $t('player__play')}
+    onclick={togglePlay}
+  >
+    <svg viewBox="0 0 24 24" aria-hidden="true"><use xlink:href={$playing ? '#icon-pause' : '#icon-play'} /></svg>
   </button>
-  <button class="btn" aria-label={$t('player__next')} onclick={async () => skipNext()}>
-    <svg version="1.1" xmlns="http://www.w3.org/2000/svg" width={iconSize} height={iconSize} viewBox="0 0 24 24">
-      <use xlink:href="#icon-skip-next" />
-    </svg>
+  <button type="button" class="btn" aria-label={$t('player__next')} onclick={async () => skipNext()}>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><use xlink:href="#icon-skip-next" /></svg>
   </button>
 </div>
 
 <style lang="less">
-  .container {
+  .transport-buttons {
     display: flex;
     flex: none;
-    flex-flow: row nowrap;
-    gap: 14px;
     align-items: center;
-    height: 100%;
-    padding-right: 10px;
-    padding-left: 10px;
+    gap: 16px;
+    height: var(--player-control-row-height, 48px);
   }
   .btn {
-    display: flex;
+    display: grid;
     flex: none;
-    // padding: 5px;
+    place-items: center;
+    width: var(--player-button-size, 32px);
+    height: var(--player-button-size, 32px);
+    aspect-ratio: 1;
     padding: 0;
-    color: var(--color-button-font);
+    color: var(--color-font-label);
     cursor: pointer;
-    background-color: transparent;
+    background: transparent;
     border: none;
-    opacity: 1;
-    // height: 52%;
-    // margin-top: -2px;
-    transition: @transition-fast;
-    transition-property: color, opacity;
-
-    // svg {
-    //   filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.2));
-    // }
-    &:hover {
-      opacity: 0.8;
+    border-radius: 50%;
+    transition:
+      color 150ms,
+      transform 150ms;
+  }
+  .btn:hover {
+    color: var(--color-font);
+  }
+  .btn svg {
+    width: var(--player-icon-size, 24px);
+    height: var(--player-icon-size, 24px);
+  }
+  .main-play {
+    width: var(--player-main-button-size, 48px);
+    height: var(--player-main-button-size, 48px);
+    color: var(--color-play-button-on, var(--color-content-background));
+    background: var(--color-play-button, var(--color-font));
+  }
+  .main-play:hover {
+    color: var(--color-play-button-on, var(--color-content-background));
+    transform: scale(1.06);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .main-play:hover {
+      transform: none;
     }
-    &:active {
-      opacity: 0.6;
-    }
+  }
+  @media (max-width: 1000px) {
+    .transport-buttons { gap: 12.8px; }
   }
 </style>

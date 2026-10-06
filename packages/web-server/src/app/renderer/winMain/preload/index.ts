@@ -27,6 +27,8 @@ export type ExposeServerFunctions = Omit<
   | 'openDevTools'
   | 'getSystemFonts'
   | 'minWindow'
+  | 'maximizeWindow'
+  | 'resizeWindow'
   | 'fullscreenWindow'
 >
 export type ClientCall = AnyListen.IPC.ClientIPC

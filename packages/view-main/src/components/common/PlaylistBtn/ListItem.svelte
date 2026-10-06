@@ -1,343 +1,198 @@
 <script lang="ts">
-  import Badge from '@/components/base/Badge.svelte'
   import Image from '@/components/base/Image.svelte'
-
-  // import SvgIcon from '@/components/base/SvgIcon.svelte'
-  import { fade } from 'svelte/transition'
-  import { buildSourceLabel } from '@any-listen/common/tools'
-  import type { MouseEventHandler } from 'svelte/elements'
   import SvgIcon from '@/components/base/SvgIcon.svelte'
   import { t } from '@/plugins/i18n'
-  import Btn from '@/components/base/Btn.svelte'
   import { scrollListTo } from '@/modules/app/store/action'
-  import { onMount, tick } from 'svelte'
   import { getMusicPicDelay } from '@/modules/player/store/actions'
-  // console.log(querystring)
+
   let {
     info,
-    picstyle,
-    // selected,
-    // selectedactive,
-    playing,
-    oncontextmenu,
-    onclick,
+    playing = false,
+    onplay,
+    onremove
   }: {
     info: AnyListen.Player.PlayMusicInfo
-    index: number
-    picstyle: string
-    playing: boolean
-    // selected?: boolean
-    // selectedactive?: boolean
-    oncontextmenu?: MouseEventHandler<HTMLDivElement>
-    onclick: (isKey: boolean) => void
+    playing?: boolean
+    onplay: () => void | Promise<void>
+    onremove?: () => void | Promise<void>
   } = $props()
 
-  let sourceLabel = $derived(buildSourceLabel(info.musicInfo))
-  let picUrl = $state<null | string>(null)
-  // let isPlaying = $derived(isplaylist && $playInfo.index === index)
-  const badgeTypes = ['primary', 'secondary', 'tertiary'] as const
-
-  const handleClick = (event: KeyboardEvent | Event) => {
-    if ('key' in event) {
-      if (event.repeat || event.key != 'Enter') return
-      onclick(true)
-    } else {
-      onclick(false)
-    }
-  }
-
-  let cancelLoadPic: (() => void) | undefined = undefined
-  let retryedLoadPic = false
-  const loadPic = () => {
-    cancelLoadPic?.()
-    cancelLoadPic = getMusicPicDelay(
-      { musicInfo: info.musicInfo, listId: info.listId, source: info.source, isRefresh: retryedLoadPic },
+  let picUrl = $state<string | null>(null)
+  let retry = $state(false)
+  $effect(() => {
+    const target = info
+    let active = true
+    const cancel = getMusicPicDelay(
+      { musicInfo: target.musicInfo, listId: target.listId, source: target.source, isRefresh: retry },
       (url) => {
-        cancelLoadPic = undefined
-        void tick().then(() => {
-          picUrl = url
-        })
+        if (active) picUrl = url
       }
     )
-  }
-
-  onMount(() => {
-    retryedLoadPic = false
-    loadPic()
     return () => {
-      cancelLoadPic?.()
+      active = false
+      cancel?.()
     }
   })
 </script>
 
-<div
-  class="container"
-  class:played={info.played}
-  role="button"
-  tabindex="0"
-  onkeydown={handleClick}
-  onclick={handleClick}
-  {oncontextmenu}
->
-  <div class="pic" style={picstyle}>
-    {#if playing}
-      <div class="play-icon" transition:fade={{ delay: 200 }}>
-        <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-          <use xlink:href="#icon-play" />
-        </svg>
-      </div>
-    {/if}
-    <Image
-      src={picUrl}
-      onerror={() => {
-        picUrl = null
-        if (retryedLoadPic) return
-        retryedLoadPic = true
-        loadPic()
-      }}
-    />
-  </div>
-  <div class="name-info">
-    <div class="name" aria-label={info.musicInfo.name}>
-      <h4>{info.musicInfo.name}</h4>
-      {#if sourceLabel.length}
-        {#each sourceLabel as label, index (index)}
-          <Badge {label} opacity={0.7} type={badgeTypes[index % badgeTypes.length]} />
-        {/each}
-      {/if}
-    </div>
-    <div class="singer">
-      {#if info.musicInfo.singer}
-        <span aria-label={info.musicInfo.singer}>{info.musicInfo.singer}</span>
-      {/if}
-      {#if info.musicInfo.meta.albumName}
-        <span aria-label={info.musicInfo.meta.albumName}>{info.musicInfo.meta.albumName}</span>
-      {/if}
-    </div>
-  </div>
-  {#if info.playLater}
-    <div class="play-later" style="flex: 0 0 8%;" aria-label={$t('user_list_music_menu__play_later')}>
-      <SvgIcon name="step-into" />
-    </div>
-  {/if}
-  <div class="goto" style="flex: 0 0 9%;">
-    <Btn
-      outline
-      icon
-      onclick={() => {
-        scrollListTo(info.listId, info.source, info.musicInfo)
-      }}
+<div class="queue-row" class:current={playing}>
+  <button
+    type="button"
+    class="track"
+    aria-label={`${$t('user_list_music_menu__play')} ${info.musicInfo.name}`}
+    onclick={onplay}
+  >
+    <span class="cover">
+      <Image
+        src={picUrl}
+        alt=""
+        onerror={() => {
+          picUrl = null
+          retry = true
+        }}
+      />
+      <span class="play-overlay" aria-hidden="true"><SvgIcon name="play" /></span>
+    </span>
+    <span class="track-copy">
+      <span class="track-name" title={info.musicInfo.name}>{info.musicInfo.name}</span>
+      <span class="artist" title={info.musicInfo.singer}
+        >{info.musicInfo.singer || info.musicInfo.meta.albumName || '—'}</span
+      >
+    </span>
+  </button>
+  <div class="actions">
+    <button
+      type="button"
+      aria-label={$t('user_list_music_menu__locate')}
+      title={$t('user_list_music_menu__locate')}
+      onclick={() => scrollListTo(info.listId, info.source, info.musicInfo)}><SvgIcon name="visit" /></button
     >
-      <SvgIcon name="visit" />
-    </Btn>
-  </div>
-  <div class="time" style="flex: 0 0 9%;">
-    <span class="no-select">{info.musicInfo.interval || '--/--'}</span>
+    {#if onremove}
+      <button
+        type="button"
+        aria-label={$t('user_list_music_menu__remove')}
+        title={$t('user_list_music_menu__remove')}
+        onclick={onremove}
+      >
+        <SvgIcon name="close" />
+      </button>
+    {/if}
   </div>
 </div>
 
 <style lang="less">
-  .container {
+  .queue-row {
     position: relative;
     display: flex;
-    flex-flow: row nowrap;
-    gap: 10px;
     align-items: center;
-    height: 100%;
-    padding: 5px;
-    font-size: 13px;
-    background-color: transparent;
-    border: 1px dashed transparent;
-    border-radius: @radius-border;
-    transition: 0.3s ease;
-    transition-property: background-color, opacity;
-    // &:hover {
-    //   .num {
-    //     opacity: 0.6;
-    //   }
-    // }
-
-    &.played {
-      opacity: 0.4;
-    }
-
-    &:not(.active, .selected) {
-      &:hover {
-        background-color: var(--color-primary-background-hover);
-      }
-    }
-    &:hover {
-      .goto {
-        opacity: 1;
-      }
-    }
-    // &.selected {
-    //   background-color: var(--color-primary-background-selected);
-    // }
-    // &.active {
-    //   background-color: var(--color-primary-background-active);
-    // }
-    // &.selectedactive {
-    //   border-color: var(--color-primary-alpha-700);
-    // }
+    height: 64px;
+    padding: 6px;
+    border-radius: 6px;
   }
-  // .active {
-  //   background-color: var(--color-primary-background);
-  // }
-
-  .pic {
+  .queue-row:hover,
+  .queue-row:focus-within {
+    background: var(--color-primary-background-hover);
+  }
+  button {
+    color: inherit;
+    cursor: pointer;
+    background: transparent;
+    border: 0;
+  }
+  button:focus-visible {
+    outline: 2px solid var(--color-font);
+    outline-offset: 2px;
+  }
+  .track {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+    height: 100%;
+    padding: 0;
+    text-align: left;
+    border-radius: 4px;
+  }
+  .cover {
     position: relative;
     flex: none;
-    // background-color: var(--color-primary-light-200-alpha-900);
-    // display: flex;
-    // align-items: center;
-    // justify-content: center;
-    border-radius: @radius-border;
-    // overflow: hidden;
-    // user-select: none;
-    // flex: none;
-    // > span {
-    //   // width: 100%;
-    //   // height: 80%;
-    //   color: var(--color-primary-light-400-alpha-200);
-    //   font-size: 18px;
-    //   font-family: Consolas, 'Courier New', monospace;
-    //   span {
-    //     padding-left: 2px;
-    //   }
-    // }
-    :global(.pic) {
-      transition: opacity @transition-fast;
-    }
+    width: 48px;
+    height: 48px;
+    overflow: hidden;
+    border-radius: 4px;
   }
-  // .num {
-  //   position: absolute;
-  //   bottom: 0;
-  //   right: 0;
-  //   .nobreak;
-  //   .center;
-  //   opacity: 0;
-  //   transition: opacity .2s ease;
-  //   padding-left: 2px;
-  //   padding-right: 2px;
-  //   font-size: 11px;
-  //   line-height: 1.2;
-  //   color: var(--color-button-font);
-  //   background-color: var(--color-button-background);
-  //   border-top-left-radius: @radius-border;
-  //   border-bottom-right-radius: @radius-border;
-  // }
-  .play-icon {
+  .cover :global(.pic) {
+    border-radius: 4px;
+  }
+  .play-overlay {
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    padding: 6px;
-    color: var(--color-button-font);
-
-    + :global(.pic) {
-      opacity: 0.1;
-    }
-  }
-
-  // .right {
-  //   flex: auto;
-  //   display: flex;
-  //   flex-flow: row nowrap;
-  //   font-size: 14px;
-  //   gap: 2px;
-  //   min-width: 0;
-  //   span {
-  //     .mixin-ellipsis-1();
-  //   }
-  // }
-
-  .name-info {
-    flex: auto;
-    min-width: 0;
-    .name {
-      display: flex;
-      flex-flow: row nowrap;
-      gap: 5px;
-      align-items: center;
-      .auto-hidden();
-    }
-    h4 {
-      .auto-hidden();
-    }
-    .singer {
-      display: flex;
-      flex-flow: row nowrap;
-      font-size: 12px;
-      color: var(--color-font-label);
-
-      span {
-        .auto-hidden();
-        + span {
-          &::before {
-            display: inline-block;
-            padding: 0 3px;
-            color: var(--color-primary-font);
-            content: '•';
-            opacity: 0.4;
-          }
-        }
-      }
-    }
-  }
-
-  .play-later {
-    flex: none;
-    font-size: 20px;
-    color: var(--color-primary-font);
-    text-align: center;
-  }
-
-  .goto {
+    inset: 0;
+    display: grid;
+    color: #fff;
+    background: #0008;
     opacity: 0;
-    transition: opacity @transition-fast;
+    place-items: center;
+    transition: opacity 120ms ease-out;
   }
-
-  .time {
-    flex: none;
+  .track:hover .play-overlay,
+  .track:focus-visible .play-overlay {
+    opacity: 1;
+  }
+  .track-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+  }
+  .track-name,
+  .artist {
+    overflow: hidden;
+    line-height: 1.35;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .track-name {
+    font-size: 14px;
+    font-weight: 550;
+  }
+  .current .track-name {
+    color: var(--color-primary);
+  }
+  .artist {
+    font-size: 12px;
     color: var(--color-font-label);
   }
-
-  // .list-item-cell {
-  //   flex: none;
-  //   // padding: 0 6px;
-  //   position: relative;
-  //   // transition:  0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  //   line-height: 16px;
-  //   vertical-align: middle;
-  //   box-sizing: border-box;
-  //   .mixin-ellipsis-1();
-
-  //   &.auto {
-  //     flex: auto;
-  //   }
-
-  //   &.name {
-  //     display: flex;
-  //     flex-flow: row nowrap;
-  //     overflow: hidden;
-  //     white-space: initial;
-  //     text-overflow: initial;
-  //     align-items: center;
-
-  //     > .name {
-  //       .mixin-ellipsis-1();
-  //     }
-  //   }
-  //   // .badge {
-  //   //   margin-left: 3px;
-  //   //   opacity: 0.85;
-  //   // }
-
-  //   // &.meta {
-  //   //   font-size: 12px;
-  //   //   color: var(--color-font-label);
-  //   // }
-  // }
+  .actions {
+    display: flex;
+    flex: none;
+    gap: 2px;
+    margin-left: 4px;
+    opacity: 0;
+  }
+  .queue-row:hover .actions,
+  .queue-row:focus-within .actions {
+    opacity: 1;
+  }
+  .actions button {
+    display: grid;
+    width: 32px;
+    height: 32px;
+    color: var(--color-font-label);
+    border-radius: 50%;
+    place-items: center;
+  }
+  .actions button:hover {
+    color: var(--color-font);
+  }
+  @media (hover: none) {
+    .actions {
+      opacity: 1;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .play-overlay {
+      transition: none;
+    }
+  }
 </style>

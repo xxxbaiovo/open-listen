@@ -7,9 +7,9 @@ import list from './list/remote'
 import player from './player/remote'
 import sync from './sync/remote'
 import theme from './theme/remote'
+import { ipcConnection } from './connection'
 
-let connectIPCService: AnyListen.IPC.ConnectIPCSrivice | null
-let ipc: AnyListen.IPC.ServerIPC
+export { ipc } from './connection'
 
 export const connectIPC = (
   onConnected: () => void,
@@ -18,9 +18,9 @@ export const connectIPC = (
   onLogout: () => void,
   pwd = ''
 ) => {
-  if (!connectIPCService) {
+  if (!ipcConnection.service) {
     if (!window.__anylisten_ipc_init__) throw new Error('ipc is not available')
-    connectIPCService = window.__anylisten_ipc_init__
+    ipcConnection.service = window.__anylisten_ipc_init__
     delete window.__anylisten_ipc_init__
   }
   const exposeFuncs: AnyListen.IPC.ClientIPC = {
@@ -34,11 +34,11 @@ export const connectIPC = (
     ...sync,
     ...command,
   }
-  connectIPCService({
+  ipcConnection.service({
     clientCall: exposeFuncs,
     onConnected: (_ipc) => {
-      ipc = _ipc
-      window.testData = ipc
+      ipcConnection.client = _ipc
+      window.testData = _ipc
       onConnected()
     },
     onDisconnected,
@@ -47,14 +47,3 @@ export const connectIPC = (
     pwd,
   })
 }
-
-const _ipc = new Proxy(
-  {},
-  {
-    get(target, property, receiver) {
-      return ipc[property as keyof AnyListen.IPC.ServerIPC]
-    },
-  }
-) as AnyListen.IPC.ServerIPC
-
-export { _ipc as ipc }

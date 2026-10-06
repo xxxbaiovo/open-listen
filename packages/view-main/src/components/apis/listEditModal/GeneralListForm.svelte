@@ -5,7 +5,7 @@
 
   let {
     item,
-    targetId,
+    targetId
   }: {
     item?: AnyListen.List.GeneralListInfo | null
     targetId?: AnyListen.List.ParentId
@@ -23,12 +23,12 @@
       playCount: 0,
       posTime: 0,
       pic: '',
-      songCount: 0,
-    },
+      songCount: 0
+    }
   }
   let listInfo = $state<AnyListen.List.GeneralListInfo>({
     ...initData,
-    meta: { ...initData.meta },
+    meta: { ...initData.meta }
   })
 
   export const verify = () => {
@@ -41,7 +41,7 @@
     listInfo = {
       ...initData,
       id: targetId || '',
-      meta: { ...initData.meta },
+      meta: { ...initData.meta }
     }
   }
   export const submit = async () => {
@@ -57,17 +57,32 @@
     if (item) {
       listInfo = {
         ...item,
-        meta: { ...item.meta },
+        meta: { ...item.meta }
       }
     } else reset()
   })
 </script>
 
 <main class="main">
-  <Input autofocus placeholder={$t('edit_list_modal__form_list_name')} bind:value={listInfo.name} />
+  <label>
+    <span>{$t('edit_list_modal__form_list_name')}</span>
+    <Input
+      autofocus
+      aria-label={$t('edit_list_modal__form_list_name')}
+      placeholder={$t('edit_list_modal__form_list_name')}
+      bind:value={listInfo.name}
+    />
+  </label>
 </main>
 
 <style lang="less">
+  label {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+  }
   .main {
     display: flex;
     // flex: auto;

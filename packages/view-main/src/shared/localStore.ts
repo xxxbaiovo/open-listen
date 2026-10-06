@@ -3,6 +3,7 @@ export const LOCAL_STORE_KEYS = {
   updateDownloadFailedTip: 'update__download_failed_tip',
   updateCheckFailedTip: 'update__check_failed_tip',
   lastUsedCommands: 'last_used_commands',
+  recentSearches: 'recent_music_searches',
 } as const
 
 type LocalStoreKey = (typeof LOCAL_STORE_KEYS)[keyof typeof LOCAL_STORE_KEYS]

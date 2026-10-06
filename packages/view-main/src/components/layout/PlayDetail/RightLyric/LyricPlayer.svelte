@@ -1,35 +1,34 @@
 <script lang="ts">
   import { useSettingValue } from '@/modules/setting/reactive.svelte'
   import { useLyric } from './useLyric.svelte'
-  import Btn from '@/components/base/Btn.svelte'
-  import { fade } from 'svelte/transition'
-  import { onMount, type ComponentExports } from 'svelte'
-  import { onDomSizeChanged } from '@any-listen/web'
+  import type { ComponentExports } from 'svelte'
   import LyricMenu from './LyricMenu.svelte'
+  import SvgIcon from '@/components/base/SvgIcon.svelte'
+  import { t } from '@/plugins/i18n'
 
   let domLyric = $state<HTMLElement>()
   let domLyricText = $state<HTMLElement>()
   let domSkipLine = $state<HTMLElement>()
   let isMsDown = $state(false)
   let isStopScroll = $state(false)
-  let timeStr = $state('--/--')
-  let winRadio = $state(document.getElementById('root')!.clientWidth / 1020)
+  let timeStr = $state('--:--')
   const textAlign = useSettingValue('playDetail.style.align')
   const isZoomActiveLrc = useSettingValue('playDetail.isZoomActiveLrc')
-  // const isShowLyricProgressSetting = useSettingValue('playDetail.isShowLyricProgressSetting')
   const fontSize = useSettingValue('playDetail.style.fontSize')
   const fontWeight = useSettingValue('playDetail.style.fontWeight')
-  const styles = $derived(`--play-detail-lrc-font-size:${(fontSize.val / 100 + 0.8) * winRadio}rem; text-align:${textAlign.val};`)
+  const fontScale = $derived((fontSize.val / 100 + 0.8) / 1.8)
   let lyricMenu = $state<ComponentExports<typeof LyricMenu>>()
 
   const {
     handleLyricMouseDown,
     handleLyricTouchStart,
-    handleWheel,
+    handleScroll,
+    handleLyricClick,
+    handleLyricKeyDown,
+    handleResumeScroll,
     handleSkipPlay,
     handleSkipMouseEnter,
     handleSkipMouseLeave,
-    // handleScrollLrc,
   } = useLyric({
     get domLyric() {
       return domLyric
@@ -40,39 +39,37 @@
     get domSkipLine() {
       return domSkipLine
     },
-    onSetMsDown(_isMsDown) {
-      isMsDown = _isMsDown
+    onSetMsDown(value) {
+      isMsDown = value
     },
-    onSetStopScroll(_isStop) {
-      isStopScroll = _isStop
+    onSetStopScroll(value) {
+      isStopScroll = value
     },
-    onSetTimeStr(_timeStr) {
-      timeStr = _timeStr
+    onSetTimeStr(value) {
+      timeStr = value
     },
-  })
-
-  onMount(() => {
-    const unsub = onDomSizeChanged(document.getElementById('root')!, (width) => {
-      winRadio = width / 1020
-    })
-    return () => {
-      unsub()
-    }
   })
 </script>
 
+<!-- The focusable scroll region delegates activation to generated lyric buttons. -->
+<!-- svelte-ignore a11y_no_noninteractive_tabindex, a11y_no_noninteractive_element_interactions -->
 <div
   bind:this={domLyric}
-  class:draging={isMsDown}
+  class="lyric"
+  class:dragging={isMsDown}
   class:lrc-active-zoom={isZoomActiveLrc.val}
   class:font-weight={fontWeight.val}
   class:text-left={textAlign.val === 'left'}
   class:text-center={textAlign.val === 'center'}
   class:text-right={textAlign.val === 'right'}
-  class="lyric"
-  role="presentation"
-  style={styles}
-  onwheel={handleWheel}
+  role="region"
+  aria-label={$t('ui.lyrics_content')}
+  tabindex="0"
+  style:--lyric-font-scale={fontScale}
+  style:text-align={textAlign.val}
+  onscroll={handleScroll}
+  onclick={handleLyricClick}
+  onkeydown={handleLyricKeyDown}
   onmousedown={handleLyricMouseDown}
   ontouchstart={handleLyricTouchStart}
   oncontextmenu={(event) => {
@@ -80,239 +77,208 @@
     lyricMenu?.show(event.pageX, event.pageY)
   }}
 >
-  <div class="pre lyric-space"></div>
-  <div bind:this={domLyricText}></div>
-  <div class="lyric-space"></div>
+  <div class="pre lyric-space" aria-hidden="true"></div>
+  <div class="lyric-text" bind:this={domLyricText}></div>
+  <div class="lyric-space after" aria-hidden="true"></div>
 </div>
+<div class="seek-anchor" bind:this={domSkipLine} aria-hidden="true"></div>
 {#if isStopScroll}
-  <div transition:fade={{ duration: 150, delay: 5 }} class="skip">
-    <div bind:this={domSkipLine} class="line"></div>
-    <span class="label">{timeStr}</span>
-    <Btn onmouseenter={handleSkipMouseEnter} onmouseleave={handleSkipMouseLeave} onclick={handleSkipPlay}>
-      <svg version="1.1" xmlns="http://www.w3.org/2000/svg" height="50%" viewBox="0 0 1024 1024">
-        <use xlink:href="#icon-play" />
-      </svg>
-    </Btn>
+  <div class="browse-tools" role="group" aria-label={$t('ui.lyric_browsing')}>
+    <button
+      class="seek"
+      aria-label={`${$t('ui.lyric_seek')} ${timeStr}`}
+      onclick={handleSkipPlay}
+      onmouseenter={handleSkipMouseEnter}
+      onmouseleave={handleSkipMouseLeave}
+    >
+      <SvgIcon name="play" /><span>{timeStr}</span>
+    </button>
+    <span class="separator" aria-hidden="true"></span>
+    <button class="resume" onclick={handleResumeScroll}>{$t('ui.lyric_resume')}</button>
   </div>
 {/if}
 <LyricMenu bind:this={lyricMenu} />
 
 <style lang="less">
-  @unplay-color: var(--color-300);
-  @unplay-font-color: var(--color-250);
-  @played-color: var(--color-primary-dark-100);
-
   .lyric {
-    // text-align: center;
+    --play-detail-lrc-font-size: calc(clamp(28px, 3.4vw, 58px) * var(--lyric-font-scale, 1));
     position: relative;
     height: 100%;
-    overflow: hidden;
-    font-size: var(--play-detail-lrc-font-size, 16px);
-    cursor: grab;
-    /* stylelint-disable-next-line property-no-vendor-prefix */
-    -webkit-mask-image: linear-gradient(transparent 0%, #fff 20%, #fff 80%, transparent 100%);
-    mask-image: linear-gradient(transparent 0%, #fff 20%, #fff 80%, transparent 100%);
-    &.draging {
-      cursor: grabbing;
-    }
-    :global {
-      .font-lrc {
-        color: @unplay-color;
-        word-break: normal;
-        overflow-wrap: anywhere;
-      }
-      .line-content {
-        padding: calc(var(--play-detail-lrc-font-size, 16px) / 1.8) 8% calc(var(--play-detail-lrc-font-size, 16px) / 1.8) 1px;
-        line-height: 1.2;
-        color: @unplay-color;
-        overflow-wrap: break-word;
-        text-shadow:
-          0 0 2px var(--color-primary-light-100-alpha-900),
-          0 0 3px var(--color-primary-light-100-alpha-900),
-          0 0 4px var(--color-primary-dark-700-alpha-900);
-        transition: @transition-slow !important;
-        transition-property: padding, transform !important;
-
-        &.active {
-          // padding: var(--play-detail-lrc-font-size, 16px) 1px;
-          padding-top: calc(var(--play-detail-lrc-font-size, 16px) * 1.2);
-          padding-bottom: calc(var(--play-detail-lrc-font-size, 16px) * 1.2);
-        }
-
-        .extended {
-          margin-top: 5px;
-          font-size: 0.8em;
-        }
-        &.line-mode {
-          .font-lrc {
-            transition: @transition-normal;
-            transition-property: color;
-          }
-        }
-        &.font-mode {
-          color: @unplay-font-color;
-        }
-        &.line-mode.active .font-lrc,
-        &.font-mode.played .font-lrc {
-          color: @played-color;
-        }
-        &.font-mode .extended .font-lrc {
-          transition: @transition-slow;
-          transition-property: color;
-        }
-
-        &.font-mode > .line > .font-lrc {
-          > span {
-            font-size: 1em;
-            background-color: @unplay-font-color;
-            /* stylelint-disable-next-line value-no-vendor-prefix */
-            background-image: -webkit-linear-gradient(top, @played-color, @played-color);
-            background-image: linear-gradient(to bottom, @played-color, @played-color);
-            background-repeat: no-repeat;
-            /* stylelint-disable-next-line property-no-vendor-prefix */
-            -webkit-background-clip: text;
-            background-clip: text;
-            background-size: 0 100%;
-            transition: @transition-normal;
-            transition-property: font-size;
-            -webkit-text-fill-color: transparent;
-          }
-        }
-      }
-    }
-    // p {
-    //   padding: 8px 0;
-    //   line-height: 1.2;
-    //   overflow-wrap: break-word;
-    //   transition: @transition-normal !important;
-    //   transition-property: color, font-size;
-    // }
-    // .lrc-active {
-    //   color: var(--color-primary);
-    //   font-size: 1.2em;
-    // }
+    padding-inline: clamp(20px, 8cqw, 150px);
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    overflow-anchor: none;
+    scroll-behavior: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #ffffff38 transparent;
+    scrollbar-gutter: stable;
+    touch-action: pan-y;
+    font-size: var(--play-detail-lrc-font-size);
+    -webkit-mask-image: linear-gradient(transparent, #000 36px, #000 calc(100% - 36px), transparent);
+    mask-image: linear-gradient(transparent, #000 36px, #000 calc(100% - 36px), transparent);
   }
-  .font-weight {
-    :global {
-      .line-content {
-        font-weight: bold;
-      }
-    }
+  .lyric:focus-visible {
+    outline-offset: -3px;
   }
-  .lrc-active-zoom {
-    :global {
-      .line-content {
-        &.active {
-          transform: scale(1.1);
-          // .extended {
-          //   // font-size: 1em;
-          // }
-          // .line {
-          //   // font-size: 1.2em;
-          // }
-        }
-      }
-    }
-    &.text-left {
-      :global {
-        .line-content {
-          padding-right: 12%;
-          transform-origin: 0%;
-        }
-      }
-    }
-    &.text-center {
-      :global {
-        .line-content {
-          padding-right: 6%;
-          padding-left: 6%;
-          // transform: scale(1.1);
-        }
-      }
-    }
-    &.text-right {
-      :global {
-        .line-content {
-          padding-left: 12%;
-          transform-origin: 100%;
-        }
-      }
-    }
+  .lyric.dragging {
+    cursor: grabbing;
+    user-select: none;
   }
-
-  .skip {
-    position: absolute;
-    top: calc(38% + var(--play-detail-lrc-font-size, 16px) + 4px);
-    left: 0;
-    // height: 6px;
-    width: 100%;
-    pointer-events: none;
-    // opacity: .5;
-    .line {
-      margin-right: 8%;
-      border-top: 2px dotted var(--color-primary-dark-100);
-      opacity: 0.15;
-      /* stylelint-disable-next-line property-no-vendor-prefix */
-      -webkit-mask-image: linear-gradient(90deg, transparent 0%, transparent 15%, #fff 100%);
-      mask-image: linear-gradient(90deg, transparent 0%, transparent 15%, #fff 100%);
-    }
-    .label {
-      position: absolute;
-      top: -16px;
-      right: 8%;
-      font-size: 13px;
-      line-height: 1.2;
-      color: var(--color-primary-dark-100);
-      opacity: 0.7;
-    }
-    :global(button) {
-      position: absolute;
-      top: 0;
-      right: -2%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 12%;
-      aspect-ratio: 1 / 1;
-      padding: 0;
-      pointer-events: initial;
-      background: none !important;
-      opacity: 0.8;
-      transform: translateY(-50%);
-      transition: @transition-normal;
-      transition-property: opacity;
-      &:hover {
-        opacity: 0.6;
-      }
-    }
+  .lyric-text {
+    max-width: 1100px;
+    margin-inline: auto;
   }
-  // .lyricSelectContent {
-  //   position: absolute;
-  //   left: 0;
-  //   top: 0;
-  //   // text-align: center;
-  //   height: 100%;
-  //   width: 100%;
-  //   font-size: var(--play-detail-lrc-font-size, 16px);
-  //   z-index: 10;
-  //   color: var(--color-400);
-
-  //   .lyricSelectline {
-  //     padding: calc(var(--play-detail-lrc-font-size, 16px) / 2) 1px;
-  //     overflow-wrap: break-word;
-  //     transition: @transition-normal !important;
-  //     transition-property: color, font-size;
-  //     line-height: 1.3;
-  //   }
-  //   .lyricSelectlineExtended {
-  //     font-size: 14px;
-  //   }
-  //   .lrcActive {
-  //     color: var(--color-primary);
-  //   }
-  // }
-
   .lyric-space {
-    height: 60%;
+    height: 38%;
+    pointer-events: none;
+  }
+  .lyric-space.after {
+    height: 52%;
+  }
+  .lyric :global(.line-content) {
+    position: relative;
+    padding: 0.32em 0.04em;
+    margin: 0;
+    font-weight: 500;
+    line-height: 1.3;
+    letter-spacing: -0.035em;
+    color: var(--lyric-text-muted);
+    overflow-wrap: anywhere;
+    text-shadow: none;
+    cursor: pointer;
+    border-radius: 5px;
+    transition:
+      color 150ms,
+      transform 150ms;
+    transform-origin: center;
+  }
+  .font-weight :global(.line-content) {
+    font-weight: 750;
+  }
+  .lyric :global(.font-lrc) {
+    color: inherit;
+  }
+  .lyric :global(.line-content.active),
+  .lyric :global(.line-content:hover),
+  .lyric :global(.line-content:focus-visible) {
+    color: var(--lyric-text-active);
+  }
+  .lyric :global(.line-content:focus-visible) {
+    outline: 2px solid #ffffffaa;
+    outline-offset: 2px;
+  }
+  .lyric :global(.line-content .extended) {
+    margin-top: 0.3em;
+    font-size: 0.55em;
+    font-weight: 500;
+    letter-spacing: -0.015em;
+    line-height: 1.5;
+  }
+  .lrc-active-zoom :global(.line-content.active) {
+    transform: scale(1.025);
+  }
+  .text-left :global(.line-content) {
+    transform-origin: left center;
+  }
+  .text-right :global(.line-content) {
+    transform-origin: right center;
+  }
+  .lyric :global(.font-mode > .line > .font-lrc > span) {
+    background-color: var(--lyric-text-muted);
+    background-image: linear-gradient(var(--lyric-text-active), var(--lyric-text-active));
+    background-repeat: no-repeat;
+    background-clip: text;
+    -webkit-background-clip: text;
+    background-size: 0 100%;
+    -webkit-text-fill-color: transparent;
+  }
+  .lyric :global(.font-mode.played .font-lrc) {
+    color: var(--lyric-text-active);
+  }
+  .seek-anchor {
+    position: absolute;
+    top: 46%;
+    left: 50%;
+    width: 1px;
+    height: 1px;
+    pointer-events: none;
+    visibility: hidden;
+  }
+  .browse-tools {
+    position: absolute;
+    z-index: 2;
+    right: 24px;
+    bottom: 18px;
+    display: flex;
+    align-items: center;
+    padding: 3px;
+    color: #fff;
+    background: #181a1ef2;
+    border: 1px solid #ffffff1a;
+    border-radius: 20px;
+    box-shadow: 0 4px 16px #0003;
+  }
+  .browse-tools button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    min-height: 28px;
+    padding: 5px 9px;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.3;
+    color: inherit;
+    background: transparent;
+    border: 0;
+    border-radius: 16px;
+    cursor: pointer;
+    transition: background-color 150ms;
+  }
+  .browse-tools button:hover {
+    background: #ffffff1a;
+  }
+  .browse-tools .seek {
+    font-variant-numeric: tabular-nums;
+  }
+  .browse-tools :global(svg) {
+    width: 13px;
+    height: 13px;
+  }
+  .separator {
+    width: 1px;
+    height: 13px;
+    background: #ffffff26;
+  }
+  :global(.focused) .lyric {
+    padding-inline: clamp(20px, 16cqw, 280px);
+  }
+  @container (max-width: 1000px) {
+    :global(.focused) .lyric {
+      padding-inline: 10cqw;
+    }
+  }
+  @container (max-width: 700px) {
+    .lyric,
+    :global(.focused) .lyric {
+      padding-inline: clamp(12px, 5cqw, 24px);
+    }
+    .lyric {
+      --play-detail-lrc-font-size: calc(clamp(22px, 5.4cqw, 36px) * var(--lyric-font-scale, 1));
+    }
+    .browse-tools {
+      right: 16px;
+      bottom: 10px;
+    }
+    .lyric :global(.line-content) {
+      padding-block: 0.4em;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .lyric :global(.line-content) {
+      transition: none;
+      transform: none;
+    }
   }
 </style>

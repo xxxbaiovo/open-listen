@@ -140,12 +140,7 @@ export const getFileType = (quality: string): AnyListen.Music.FileType => {
   return 'mp3'
 }
 
-const existTimeExp = /\[\d{1,2}:.*\d{1,4}\]/
-/**
- * 是否有效的 lyric
- * @param lrc
- */
-export const isValidLyric = (lrc?: string | null | number) => typeof lrc == 'string' && existTimeExp.test(lrc)
+export { isValidLyric } from './lyric'
 
 export const getLatestVersion = (info: AnyListen.UpdateInfo, allowPreRelease = false) => {
   const latest = { version: info.version, desc: info.desc, time: info.time }

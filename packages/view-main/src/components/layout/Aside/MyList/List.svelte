@@ -10,15 +10,22 @@
   import type { ComponentExports } from 'svelte'
   import { sortable } from '@/shared/compositions/sortable.svelte'
   import { updateUserListPosition } from './action'
+  import { t } from '@/plugins/i18n'
+  import PlaylistDropZone from './PlaylistDropZone.svelte'
+  let { filter = '' }: { filter?: string } = $props()
   // console.log(params)
-  const listItemHeight = useListItemHeight(3.2)
+  const listItemHeight = useListItemHeight(4.2)
   const picStyle = $derived(`height:${listItemHeight.val * 0.64}px; width:${listItemHeight.val * 0.64}px;`)
   // const picStyle = $derived(`height:${listItemHeight.val * 0.5}px;`)
 
   let menu: ComponentExports<typeof Menu>
 
   const userLists = useUserList(null)
-  const lists = $derived([...$defaultLists, ...userLists.val])
+  const lists = $derived(
+    [...$defaultLists, ...userLists.val].filter((item) =>
+      item.name.toLocaleLowerCase().includes(filter.trim().toLocaleLowerCase())
+    )
+  )
   let activeIndex = $state(-1)
 
   const showMenu = (item: AnyListen.List.MyListInfo | null, position: Position) => {
@@ -47,9 +54,10 @@
         class="list"
         {@attach sortable({
           onupdate: (parentId, id, toTargetId, position) => {
+            if (filter.trim()) return
             void updateUserListPosition(id, position - $defaultLists.length)
           },
-          filter: 'default-list',
+          filter: filter.trim() ? 'list-item' : 'default-list',
           activeElement: 'my-list-container',
         })}
       >
@@ -58,7 +66,6 @@
             <ListItem
               listInfo={item}
               active={activeIndex == index}
-              {index}
               {picStyle}
               oncontextmenu={(event) => {
                 event.preventDefault()
@@ -68,8 +75,11 @@
               }}
             />
           </li>
+        {:else}
+          <li class="empty-filter">{$t('ui.no_results')}</li>
         {/each}
       </ul>
+      <PlaylistDropZone />
     </div>
   {:catch error}
     <div class="list-container tip">Load failed: {error.message}</div>
@@ -85,6 +95,8 @@
 <style lang="less">
   .list {
     position: relative;
+    min-height: 0;
+    flex: 1;
     height: 100%;
   }
   .list-container {
@@ -94,12 +106,20 @@
     height: 100%;
     contain: strict;
   }
+  .list-container > .list { height: auto; }
   .list-item {
+    min-height: 4.2rem;
     padding: 0 6px;
     -webkit-user-drag: revert-layer;
   }
   .tip {
     align-items: center;
     justify-content: center;
+  }
+  .empty-filter {
+    padding: 24px 16px;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--color-font-label);
   }
 </style>

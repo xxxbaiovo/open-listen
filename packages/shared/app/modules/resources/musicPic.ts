@@ -1,6 +1,8 @@
 import { services } from '../resources/shared'
 import { findMusic } from './tools'
 import { allowedUrl, buildExtSourceId, getExtSource } from './utils'
+import { withAbortSignal } from '@any-listen/common/abort'
+import { findFallbackCover } from './coverFallback'
 
 export const musicPicSearch = async ({
   extensionId,
@@ -70,8 +72,15 @@ const handleGetMusicPic = async (
   })
 }
 
-export const getMusicPic = async (data: { musicInfo: AnyListen.Music.MusicInfo }): Promise<string> => {
-  return findMusic(data.musicInfo, async (musicInfo) => {
-    return handleGetMusicPic({ musicInfo })
-  })
+export const getMusicPic = async (data: { musicInfo: AnyListen.Music.MusicInfo; excludedUrl?: string | null }): Promise<string> => {
+  const signal = AbortSignal.timeout(4000)
+  try {
+    return await withAbortSignal(findMusic(data.musicInfo, async (musicInfo) => {
+      const url = await withAbortSignal(handleGetMusicPic({ musicInfo }), signal)
+      if (url === data.excludedUrl) throw new Error('Previously failed cover')
+      return url
+    }, signal), signal)
+  } catch {
+    return findFallbackCover(data.musicInfo, data.excludedUrl)
+  }
 }

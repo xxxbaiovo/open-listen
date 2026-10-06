@@ -110,7 +110,7 @@ export const getMusicPicUrl = async ({
       url: musicInfo.meta.picUrl,
     }
   }
-  const url = await getMusicPicResource({ musicInfo })
+  const url = await getMusicPicResource({ musicInfo, excludedUrl: isRefresh ? musicInfo.meta.picUrl : undefined })
 
   return {
     url,
@@ -153,10 +153,9 @@ export const getLyricInfo = async ({
   listId?: string | null
   isRefresh?: boolean
 }): Promise<AnyListen.IPCMusic.MusicLyricInfo> => {
-  const [remote, local] = await Promise.all([
-    getMusicLyricResource({ musicInfo }).catch(() => null),
-    getCachedLyricInfo(musicInfo),
-  ])
+  const local = await getCachedLyricInfo(musicInfo)
+  if (local && !isRefresh) return { info: local, isFromCache: true }
+  const remote = await getMusicLyricResource({ musicInfo }).catch(() => null)
   if (remote) {
     let isSave = true
     if (local) {

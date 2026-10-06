@@ -1,164 +1,141 @@
 <script lang="ts">
-  import { setMaximized, windowDarg } from '@/shared/browser/widnow.svelte'
-  import { t } from '@/plugins/i18n'
+  import SvgIcon from '@/components/base/SvgIcon.svelte'
   import { setShowPlayDetail } from '@/modules/playDetail/store/action'
-  import { onMount } from 'svelte'
-  import { appEvent } from '@/modules/app/store/event'
-  import { useIsFullscreen } from '@/modules/app/reactive.svelte'
-  import { setFullScreen } from '@/modules/app/store/action'
+  import { musicInfo } from '@/modules/player/reactive.svelte'
+  import { t } from '@/plugins/i18n'
+  import { windowDarg } from '@/shared/browser/widnow.svelte'
 
-  const fullscreenState = useIsFullscreen()
-
-  let domBtns = $state<HTMLDivElement>()
-
-  onMount(() => {
-    const getBtnEl = (el: HTMLElement | null): HTMLButtonElement | null => {
-      return el ? (el.tagName == 'BUTTON' ? (el as HTMLButtonElement) : getBtnEl(el.parentNode as HTMLElement | null)) : null
-    }
-    const handleMouseover = (event: MouseEvent) => {
-      const btn = getBtnEl(event.target as HTMLElement)
-      if (!btn) return
-      btn.classList.add('hover')
-    }
-    const handleMouseout = (event: MouseEvent) => {
-      const btn = getBtnEl(event.target as HTMLElement)
-      if (!btn) return
-      btn.classList.remove('hover')
-    }
-
-    const unsub = appEvent.on('focus', () => {
-      if (!domBtns) return
-      for (const node of domBtns.childNodes) {
-        if ((node as HTMLElement).tagName != 'BUTTON') continue
-        ;(node as HTMLElement).classList.remove('hover')
-      }
-    })
-    domBtns!.addEventListener('mouseover', handleMouseover)
-    domBtns!.addEventListener('mouseout', handleMouseout)
-    return () => {
-      unsub()
-      domBtns!.removeEventListener('mouseover', handleMouseover)
-      domBtns!.removeEventListener('mouseout', handleMouseout)
-    }
-  })
+  let { focusLyrics, ontogglefocus }: { focusLyrics: boolean; ontogglefocus: () => void } = $props()
 </script>
 
 {#snippet content()}
-  <div bind:this={domBtns} class="control-btn no-drag">
-    {#if import.meta.env.VITE_IS_DESKTOP}
-      {#if fullscreenState.isFullscreen}
-        <button
-          type="button"
-          class="fullscreen"
-          data-click-hide
-          aria-label={$t('fullscreen_exit')}
-          onclick={() => {
-            setFullScreen(false)
-          }}
-        >
-          <svg version="1.1" height="60%" viewBox="0 0 24 24">
-            <use xlink:href="#icon-window-fullscreen-exit" />
-          </svg>
-        </button>
-      {/if}
-    {/if}
-    {#if import.meta.env.VITE_IS_WEB}
-      <button
-        type="button"
-        class="fullscreen"
-        data-click-hide
-        aria-label={fullscreenState.isFullscreen ? $t('maximized_exit') : $t('maximized')}
-        onclick={() => {
-          setMaximized(!fullscreenState.isFullscreen)
-        }}
-      >
-        <svg version="1.1" height="60%" viewBox="0 0 24 24">
-          <use xlink:href={fullscreenState.isFullscreen ? '#icon-window-restore' : '#icon-window-maximize'} />
-        </svg>
-      </button>
-    {/if}
+  <div class="track-label" title={[$musicInfo.name, $musicInfo.singer].filter(Boolean).join(' · ')}>
+    <strong>{$musicInfo.name || $t('ui.lyrics')}</strong>
+    {#if $musicInfo.singer}<span>{$musicInfo.singer}</span>{/if}
+  </div>
+  <div class="control-btn no-drag">
     <button
       type="button"
-      class="hide"
-      data-click-hide
-      aria-label={$t('play_detail.hide_tip')}
-      onclick={() => {
-        setShowPlayDetail(false)
-      }}
+      class="focus-toggle"
+      aria-label={focusLyrics ? $t('ui.lyrics_cover') : $t('ui.lyrics_focus')}
+      title={focusLyrics ? $t('ui.lyrics_cover') : $t('ui.lyrics_focus')}
+      aria-pressed={focusLyrics}
+      onclick={ontogglefocus}
     >
-      <svg version="1.1" height="35%" viewBox="0 0 30.727 30.727">
-        <use xlink:href="#icon-window-hide" />
+      <SvgIcon name={focusLyrics ? 'albums' : 'lyric'} />
+      <span>{focusLyrics ? $t('ui.lyrics_cover') : $t('ui.lyrics_focus')}</span>
+    </button>
+    <button type="button" aria-label={$t('play_detail.hide_tip')} onclick={() => setShowPlayDetail(false)}>
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path
+          d="m6 9 6 6 6-6"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
       </svg>
     </button>
   </div>
 {/snippet}
 
 {#if import.meta.env.VITE_IS_DESKTOP}
-  <div class="header drag-no-modal">
-    {@render content()}
-  </div>
-{/if}
-{#if import.meta.env.VITE_IS_WEB}
-  <div class="header" {@attach windowDarg}>
-    {@render content()}
-  </div>
+  <header class="header drag-no-modal">{@render content()}</header>
+{:else}
+  <header class="header" {@attach windowDarg}>{@render content()}</header>
 {/if}
 
 <style lang="less">
-  :global(.fullscreen) {
-    .header {
-      align-self: flex-start;
-      // .control-btn {
-      //   .close,
-      //   .min {
-      //     display: none;
-      //   }
-      //   .fullscreenExit {
-      //     display: flex;
-      //   }
-      // }
-    }
-  }
   .header {
-    position: relative;
+    display: flex;
     flex: none;
-    flex: 0 0 @height-toolbar;
-    align-self: flex-start;
+    align-items: center;
+    justify-content: space-between;
     width: 100%;
-
+    height: 64px;
+    gap: 24px;
+    padding: 0 26px;
+  }
+  .track-label {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    min-width: 0;
+    color: #fff;
+    font-size: 13px;
+    line-height: 1.4;
+  }
+  .track-label strong,
+  .track-label span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .track-label strong {
+    min-width: 0;
+    font-weight: 550;
+  }
+  .track-label span {
+    max-width: 200px;
+    color: #ffffffb3;
+    font-size: 12px;
+  }
+  .control-btn {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: 6px;
+  }
+  button {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 8px;
+    color: #ffffffc7;
+    cursor: pointer;
+    background: transparent;
+    border: none;
+    border-radius: 50%;
+    transition:
+      color 150ms,
+      background-color 150ms;
+  }
+  button:hover,
+  button:focus-visible {
+    color: #fff;
+    background: #ffffff17;
+  }
+  button :global(svg) {
+    width: 19px;
+    height: 19px;
+  }
+  button.focus-toggle {
+    gap: 7px;
+    width: auto;
+    padding: 8px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  @container (max-width: 700px) {
+    .header {
+      height: 56px;
+      gap: 10px;
+      padding: 0 12px;
+    }
+    .track-label span,
+    .focus-toggle span {
+      display: none;
+    }
     .control-btn {
-      position: absolute;
-      top: 0;
-      right: 0;
-      display: flex;
-
-      button {
-        position: relative;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 46px;
-        height: 30px;
-        padding: 1px;
-        color: var(--color-font-label);
-        cursor: pointer;
-        outline: none;
-        background: none;
-        border: none;
-        transition: background-color 0.2s ease-in-out;
-
-        &:global(.hover) {
-          background-color: var(--color-button-background-hover);
-
-          &.close {
-            background-color: var(--color-btn-close);
-          }
-        }
-      }
-
-      // .fullscreenExit {
-      //   display: none;
-      // }
+      gap: 2px;
+    }
+    button.focus-toggle {
+      width: 36px;
+      padding: 8px;
     }
   }
 </style>

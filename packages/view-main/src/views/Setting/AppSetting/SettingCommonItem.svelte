@@ -76,12 +76,14 @@
     }}
   />
 {:else if item.type === 'radio'}
-  <RadioGroup name={$t(item.name)} desc={item.description && $t(item.description)}>
+  <RadioGroup name={$t(item.name)} desc={item.description && $t(item.description)} theme={item.field === 'theme.id'}>
     {#each list as radioItem (radioItem.value)}
       <RadioItem
         id={`appSetting_${item.field}_${item.type}_${radioItem.value}`}
         name={$t(radioItem.name)}
         value={radioItem.value}
+        group={item.field}
+        preview={radioItem.preview}
         checked={(setting.val as string) == radioItem.value}
         disabled={radioItem.disabled}
         onselect={(val) => {

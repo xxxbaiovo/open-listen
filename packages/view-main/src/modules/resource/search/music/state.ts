@@ -1,16 +1,11 @@
-export interface ListInfo {
-  requestPromise?: Promise<AnyListen.IPCResource.MusicListResult>
-  total: number
-  page: number
-  limit: number
-  searchKey: string | null
-  requestKey: string | null
-  cacheTime: number
-}
+import { PageCache } from './pageCache'
+
 export interface InitState {
-  lists: Map<string, ListInfo>
+  cache: PageCache<AnyListen.IPCResource.MusicListResult>
+  prefetchPromise: Promise<AnyListen.IPCResource.MusicListResult> | null
 }
 
 export const musicState: InitState = {
-  lists: new Map(),
+  cache: new PageCache<AnyListen.IPCResource.MusicListResult>({ maxPages: 48, ttl: 30 * 60_000 }),
+  prefetchPromise: null
 }

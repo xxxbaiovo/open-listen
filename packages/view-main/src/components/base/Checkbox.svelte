@@ -1,6 +1,5 @@
 <script lang="ts">
   import type { Snippet } from 'svelte'
-
   let {
     checked,
     id,
@@ -10,6 +9,7 @@
     disabled = false,
     onchange,
     children,
+    variant = 'checkbox',
   }: {
     checked: boolean
     id: string
@@ -19,122 +19,142 @@
     disabled?: boolean
     onchange: (checked: boolean) => void
     children?: Snippet
+    variant?: 'checkbox' | 'switch'
   } = $props()
 </script>
 
-<div class="checkbox">
-  <input
-    {id}
-    type="checkbox"
-    aria-hidden="true"
-    class="input"
-    {checked}
-    {disabled}
-    {name}
-    oninput={(event) => {
-      onchange((event.target as HTMLInputElement).checked)
-    }}
-  />
+<div class="checkbox" class:switch={variant === 'switch'} class:disabled>
   <label for={id} class="content">
-    <div
-      class="container"
-      role="checkbox"
-      tabindex="0"
+    <input
+      {id}
+      {name}
+      type="checkbox"
+      role={variant === 'switch' ? 'switch' : undefined}
+      class="input"
+      {checked}
+      {disabled}
       aria-label={arialabel ?? label}
-      aria-checked={checked}
-      aria-disabled={disabled}
+      oninput={(event) => onchange(event.currentTarget.checked)}
       onkeydown={(event) => {
-        if (disabled) return
-        switch (event.key) {
-          case 'Enter':
-          case ' ':
-            event.preventDefault()
-            event.stopPropagation()
-            ;(event.target as HTMLInputElement).checked = !checked
-            onchange(!checked)
-            break
+        if (event.key === 'Enter' && !disabled) {
+          event.preventDefault()
+          onchange(!checked)
         }
       }}
-    >
-      <svg version="1.1" class="icon" xmlns="http://www.w3.org/2000/svg" height="100%" width="100%" viewBox="0 32 448 448">
-        <use xlink:href="#icon-check-true" />
-      </svg>
-    </div>
-    {#if children}
-      {@render children()}
-    {:else}
-      <span class="label">
-        {label}
-      </span>
-    {/if}
+    />
+    <span class="control" aria-hidden="true"></span>
+    {#if children}{@render children()}{:else}<span class="label">{label}</span>{/if}
   </label>
 </div>
 
 <style lang="less">
   .checkbox {
-    display: inline-block;
-    font-size: 14px;
-  }
-  .input {
-    display: none;
-    &[disabled] {
-      + .content {
-        opacity: 0.5;
-        .container,
-        .label {
-          cursor: default;
-        }
-      }
-    }
-    &:checked {
-      + .content {
-        .container {
-          &::after {
-            border-color: var(--color-primary-font);
-          }
-        }
-        .icon {
-          transform: scale(1);
-          // opacity: 1;
-        }
-      }
-    }
+    display: inline-flex;
+    font-size: var(--text-body, 14px);
+    vertical-align: middle;
   }
   .content {
-    display: flex;
-    align-items: center;
-  }
-  .container {
     position: relative;
     display: flex;
+    align-items: center;
+    gap: 9px;
+    min-height: 28px;
+    cursor: pointer;
+  }
+  .input {
+    position: absolute;
+    z-index: 1;
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    opacity: 0;
+    cursor: inherit;
+  }
+  .control {
+    position: relative;
     flex: none;
-    width: 1em;
-    height: 1em;
-    color: var(--color-primary);
-    cursor: pointer;
-    // border: 1px solid #ccc;
-    &::after {
-      position: absolute;
-      inset: 0;
-      content: ' ';
-      border: 1px solid var(--color-font-label);
-      border-radius: 2px;
-      transition: border-color 0.2s ease;
-    }
+    width: 18px;
+    height: 18px;
+    border: 1.5px solid var(--color-font-label);
+    border-radius: 4px;
+    background: transparent;
+    transition:
+      background-color 150ms,
+      border-color 150ms;
   }
-  .icon {
-    border-radius: 2px;
-    transform: scale(0);
-    transition: 0.3s ease;
-    transition-property: transform;
-    // opacity: 0;
+  .control::after {
+    position: absolute;
+    top: 2px;
+    left: 5px;
+    width: 5px;
+    height: 9px;
+    content: '';
+    border-right: 1.5px solid var(--color-accent-on, #111);
+    border-bottom: 1.5px solid var(--color-accent-on, #111);
+    transform: rotate(45deg);
+    opacity: 0;
   }
-
+  .input:checked + .control {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+  }
+  .input:checked + .control::after {
+    opacity: 1;
+  }
+  .input:focus-visible + .control {
+    outline: var(--focus-ring);
+    outline-offset: -2px;
+  }
   .label {
-    flex: auto;
-    margin-left: 5px;
-    font-size: 1em;
-    line-height: 1.5;
-    cursor: pointer;
+    font-size: inherit;
+    font-weight: 450;
+    line-height: 1.55;
+  }
+  .disabled {
+    opacity: 0.45;
+  }
+  .disabled .content {
+    cursor: not-allowed;
+  }
+  .switch {
+    width: 100%;
+  }
+  .switch .content {
+    flex: 1;
+    flex-direction: row-reverse;
+    justify-content: space-between;
+    gap: 24px;
+    min-height: 40px;
+  }
+  .switch .input {
+    right: 0;
+    width: 38px;
+    height: 22px;
+  }
+  .switch .control {
+    width: 38px;
+    height: 22px;
+    border: 0;
+    border-radius: 20px;
+    background: var(--color-switch-track, #616161);
+  }
+  .switch .control::after {
+    top: 3px;
+    left: 3px;
+    width: 16px;
+    height: 16px;
+    border: none;
+    border-radius: 50%;
+    background: #fff;
+    opacity: 1;
+    transform: translateX(0);
+    box-shadow: 0 1px 3px #0003;
+    transition:
+      transform 150ms cubic-bezier(0.2, 0, 0, 1),
+      background-color 150ms;
+  }
+  .switch .input:checked + .control::after {
+    transform: translateX(16px);
+    background: var(--color-accent-on, #111);
   }
 </style>

@@ -10,7 +10,6 @@ import { musicLibraryState } from './store/state'
 const getDefaultLists = () => {
   return [
     { ...musicLibraryState.loveList, name: i18n.t('list_name__love') },
-    { ...musicLibraryState.defaultList, name: i18n.t('list_name__default') },
   ] as AnyListen.List.MyListInfo[]
 }
 // const getMyLists = () => {

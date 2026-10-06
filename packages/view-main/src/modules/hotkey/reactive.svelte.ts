@@ -11,7 +11,9 @@ export const useConfig = (type: 'local' | 'global') => {
   let config = $derived.by(() => {
     // eslint-disable-next-line svelte/prefer-svelte-reactivity
     const cmds = new Map(commands.val.map((cmd) => [cmd.fullCommand, cmd]))
-    return Object.entries(keyConfig).map(([key, cmd]) => [key, cmds.get(cmd)] as const)
+    return Object.entries(keyConfig)
+      .filter(([, cmd]) => cmd !== 'showMusicComment')
+      .map(([key, cmd]) => [key, cmds.get(cmd)] as const)
   })
 
   onMount(() => {

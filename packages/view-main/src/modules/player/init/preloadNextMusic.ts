@@ -4,122 +4,90 @@ import { onRelease } from '@/modules/app/shared'
 import { appState } from '@/modules/app/store/state'
 import { settingEvent } from '@/modules/setting/store/event'
 import { settingState } from '@/modules/setting/store/state'
-import { getCurrentTime, onTimeupdate } from '@/plugins/player'
 import { createUnsubscriptionSet } from '@/shared'
+import { audioPreload } from '@/shared/audioPreload'
 
 import { onPlayerCreated } from '../shared'
 import { playerEvent } from '../store/event'
 import { getNextPlayMusicInfo, resetRandomNextMusicInfo } from '../store/playerActions'
-import { getMusicUrl } from '../store/playerRemoteAction'
+import { getMusicLyric, getMusicUrl } from '../store/playerRemoteAction'
 import { playerState } from '../store/state'
 
-let audio: HTMLAudioElement
-const PRELOAD_TIME = 15
-const initAudio = () => {
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-  if (audio) return
-  audio = new Audio()
-  audio.controls = false
-  audio.preload = 'auto'
-  audio.crossOrigin = 'anonymous'
-  audio.muted = true
-  audio.volume = 0
-  audio.autoplay = true
-  audio.addEventListener('playing', () => {
-    audio.pause()
-  })
-}
-const checkMusicUrl = async (url: string): Promise<boolean> => {
-  initAudio()
-  return new Promise<boolean>((resolve) => {
-    const clear = () => {
-      audio.removeEventListener('error', handleErr)
-      audio.removeEventListener('canplay', handlePlay)
-    }
-    const handleErr = () => {
-      clear()
-      // https://developer.mozilla.org/en-US/docs/Web/API/MediaError/code
-      // MediaError.MEDIA_ERR_ABORTED
-      if (audio.error?.code === 1) {
-        resolve(true)
-      } else {
-        resolve(false)
-      }
-    }
-    const handlePlay = () => {
-      clear()
-      resolve(true)
-    }
-    audio.addEventListener('error', handleErr)
-    audio.addEventListener('canplay', handlePlay)
-    audio.src = buildUrl(url, settingState.setting['network.proxyAllResources'], appState.proxyServerHost)
-  }).finally(() => {
-    audio.src = ''
-  })
-}
-
-const preloadMusicInfo = {
-  isLoading: false,
-  preProgress: 0,
-  info: null as AnyListen.Player.PlayMusicInfo | null,
-}
-const resetPreloadInfo = () => {
-  preloadMusicInfo.preProgress = 0
-  preloadMusicInfo.info = null
-  preloadMusicInfo.isLoading = false
-}
-const preloadNextMusicUrl = async (curTime: number) => {
-  if (preloadMusicInfo.isLoading || curTime - preloadMusicInfo.preProgress < 3) return
-  preloadMusicInfo.isLoading = true
-  console.log('preload next music url')
-  const info = await getNextPlayMusicInfo()
-  if (info) {
-    preloadMusicInfo.info = info
-    const { url } = await getMusicUrl({ musicInfo: info.musicInfo }).catch(() => ({ url: '' }))
-    if (url) {
-      console.log('preload url', url)
-      const result = await checkMusicUrl(url)
-      if (!result) {
-        const { url } = await getMusicUrl({ musicInfo: info.musicInfo, isRefresh: true }).catch(() => ({ url: '' }))
-        void checkMusicUrl(url)
-        console.log('preload url refresh', url)
-      }
+const unregistered = createUnsubscriptionSet()
+export const initPreloadNextMusic = () => {
+  let revision = 0
+  let timer: ReturnType<typeof setTimeout> | undefined
+  let attempted = false
+  let queueSignature = ''
+  const clearTimer = () => {
+    clearTimeout(timer)
+    timer = undefined
+  }
+  const preload = async () => {
+    if (attempted || !playerState.playing || !playerState.playerPlaying || playerState.isPlayedStop) return
+    attempted = true
+    const version = revision
+    const currentId = playerState.playMusicInfo?.itemId
+    const isCurrent = () => version === revision && currentId === playerState.playMusicInfo?.itemId
+    try {
+      const next = await getNextPlayMusicInfo()
+      if (!next || !isCurrent() || next.musicInfo.id === playerState.musicInfo.id || next.musicInfo.isLocal) return
+      // Save lyrics in the normal local cache, without touching the visible song.
+      void getMusicLyric({ musicInfo: next.musicInfo }).catch(() => {})
+      const { url } = await getMusicUrl({ musicInfo: next.musicInfo })
+      if (!url || !isCurrent()) return
+      await audioPreload.prepare(next.musicInfo.id, url,
+        buildUrl(url, settingState.setting['network.proxyAllResources'], appState.proxyServerHost))
+    } catch {
+      // Foreground playback retains its normal retry/fallback path.
     }
   }
-  preloadMusicInfo.isLoading = false
-}
-
-let unregistered = createUnsubscriptionSet()
-export const initPreloadNextMusic = () => {
-  onRelease(unregistered.clear.bind(unregistered))
+  const schedule = () => {
+    clearTimer()
+    // Establish current playback before using background bandwidth.
+    timer = setTimeout(() => { timer = undefined; void preload() }, 1500)
+  }
+  const invalidate = () => {
+    revision++
+    attempted = false
+    clearTimer()
+    // Keep a completed buffer when its track has just become the current song.
+    audioPreload.cancel(playerState.playMusicInfo?.musicInfo.id)
+    resetRandomNextMusicInfo()
+    schedule()
+  }
+  const queueChanged = () => {
+    // Metadata/picture updates must not reroll a reserved random track.
+    const signature = playerState.playList.map((m) => `${m.itemId}:${Number(m.playLater)}:${Number(m.played)}`).join('|')
+    if (signature === queueSignature) return
+    queueSignature = signature
+    invalidate()
+  }
+  const cleanup = () => {
+    revision++
+    attempted = false
+    clearTimer()
+    audioPreload.cancel()
+  }
+  onRelease(() => { cleanup(); unregistered.clear() })
   onPlayerCreated(() => {
-    unregistered.register((unregistered) => {
-      unregistered.add(
-        playerEvent.on('setProgress', (time: number, maxTime?: number) => {
-          if (!playerState.musicInfo.id) return
-          preloadMusicInfo.preProgress = time
-        })
-      )
-      unregistered.add(playerEvent.on('musicChanged', resetPreloadInfo))
-      unregistered.add(
-        settingEvent.on('updated', (keys) => {
-          if (keys.includes('player.togglePlayMethod')) {
-            if (!preloadMusicInfo.info || preloadMusicInfo.info.playLater) return
-            resetRandomNextMusicInfo()
-            preloadMusicInfo.info = null
-            preloadMusicInfo.preProgress = playerState.progress.nowPlayTime
-          }
-        })
-      )
-      unregistered.add(
-        onTimeupdate(() => {
-          const time = getCurrentTime()
-          const duration = playerState.progress.maxPlayTime
-          if (duration > PRELOAD_TIME && duration - time < PRELOAD_TIME && !preloadMusicInfo.info) {
-            void preloadNextMusicUrl(time)
-          }
-        })
-      )
+    unregistered.register((subscriptions) => {
+      subscriptions.add(cleanup)
+      subscriptions.add(playerEvent.on('musicChanged', invalidate))
+      subscriptions.add(playerEvent.on('playListChanged', queueChanged))
+      subscriptions.add(playerEvent.on('play', schedule))
+      subscriptions.add(playerEvent.on('playerWaiting', () => {
+        revision++
+        attempted = false
+        clearTimer()
+        audioPreload.suspend()
+      }))
+      subscriptions.add(playerEvent.on('stop', cleanup))
+      subscriptions.add(settingEvent.on('updated', (keys) => {
+        if (keys.some((key) => ['player.togglePlayMethod', 'player.shuffle', 'player.playQuality', 'network.proxyAllResources'].includes(key))) {
+          invalidate()
+        }
+      }))
     })
   })
 }

@@ -25,7 +25,7 @@
     {#if textarea}
       <Textarea {id} {value} {onchange} />
     {:else}
-      <Input {id} {value} {onchange} />
+      <Input {id} {value} {onchange} aria-label={name} />
     {/if}
   </div>
 </TitleContent>

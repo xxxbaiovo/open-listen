@@ -50,8 +50,8 @@ const options = {
   publish: [
     {
       provider: 'github',
-      owner: 'any-listen',
-      repo: 'any-listen-desktop',
+      owner: 'xxxbaiovo',
+      repo: 'open-listen',
     },
   ],
 }

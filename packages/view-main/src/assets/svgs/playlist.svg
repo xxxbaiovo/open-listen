@@ -1,8 +1,1 @@
-﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="192" height="192" fill="currentColor">
-  <path
-    d="M18 5H3a1 1 0 000 2h15a1 1 0 000-2zm0 4H3a1 1 0 000 2h15a1 1 0 000-2zm-2 4H3a1 1 0 000 2h13a1 1 0 000-2zm-1 4H3a1 1 0 000 2h12a1 1 0 000-2z"
-    opacity=".35" />
-  <circle cx="14" cy="17" r="5" />
-  <path d="M18 3h1v14h-3V5a2 2 0 012-2z" />
-  <path d="M22 3h-4v4h3a2 2 0 002-2V4a1 1 0 00-1-1z" />
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="5" rx="2.5"/><path d="M2 14h20M2 22h20"/></svg>

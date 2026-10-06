@@ -1,7 +1,7 @@
 import type { VIEW_MAIN_ALL_COMMANDS } from '@any-listen/common/command'
 import ExecEvent, { type EventType } from '@any-listen/common/ExecEvent'
 
-type LocalCommands = (typeof VIEW_MAIN_ALL_COMMANDS)[number]
+type LocalCommands = Exclude<(typeof VIEW_MAIN_ALL_COMMANDS)[number], 'showMusicComment'>
 class MainEvent extends ExecEvent {
   async executeEvent<K extends keyof EventMethods>(eventName: K, ...args: unknown[]) {
     return this.execute(eventName, ...args)
@@ -69,10 +69,6 @@ class MainEvent extends ExecEvent {
 
   async seekBackward(time?: number) {
     return this.executeEvent('seekBackward', time)
-  }
-
-  async showMusicComment() {
-    return this.executeEvent('showMusicComment')
   }
 
   async focusSearchInput() {

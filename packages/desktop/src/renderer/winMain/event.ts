@@ -36,6 +36,9 @@ class Event extends _Event {
   fullscreen(isFullscreen: boolean) {
     this.emitEvent('fullscreen', isFullscreen)
   }
+  maximized(isMaximized: boolean) {
+    this.emitEvent('maximized', isMaximized)
+  }
 }
 
 type EventMethods = Omit<Event, keyof _Event | 'emitEvent'>

@@ -1,5 +1,6 @@
 import { getLocation, push, replace, type Params } from '@/plugins/routes'
-import { urlParamKeyMap } from '@/views/Online/shared.svelte'
+import { getSourceId, urlParamKeyMap } from '@/views/Online/shared.svelte'
+import { setShowPlayDetail } from '@/modules/playDetail/store/action'
 
 const historys: Array<[string, Params]> = []
 export const setLastHistory = (path: string, query: Params) => {
@@ -58,8 +59,20 @@ const buildQueryParams = (params: Params, text?: string) => {
   }
   return params
 }
-export const toOnlineSearch = async (text?: string) => {
+export const toOnlineSearch = async (text?: string, musicSource?: AnyListen.Extension.ResourceItem) => {
+  setShowPlayDetail(false)
   const loc = getLocation()
+  if (musicSource) {
+    const params: Params = {
+      [urlParamKeyMap.type]: 'search',
+      [urlParamKeyMap.queryType]: 'music',
+      [urlParamKeyMap.source]: getSourceId(musicSource),
+    }
+    if (text?.trim()) params[urlParamKeyMap.query] = text.trim()
+    if (loc.location.startsWith('/online')) await replace('/online', params)
+    else await push('/online', params)
+    return
+  }
   const lastLoc = historys[historys.length - 1] as [string, Params] | undefined
   if (text) {
     if (loc.location.startsWith('/online')) {

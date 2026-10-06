@@ -4,7 +4,12 @@ import * as commit from './commit'
 import { themeState } from './state'
 
 export const applyTheme = (colors: AnyListen.ThemeSetting['colors']) => {
+  const root = document.documentElement
+  root.classList.add('theme-changing')
   window.setTheme(colors)
+  // Apply the new palette in one frame instead of animating every surface.
+  root.getBoundingClientRect()
+  requestAnimationFrame(() => root.classList.remove('theme-changing'))
 }
 
 export const setThemePreview = (preview: boolean) => {

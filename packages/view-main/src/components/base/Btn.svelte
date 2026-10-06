@@ -71,14 +71,19 @@
     justify-content: center;
     padding: 8px 15px;
     font-size: 14px;
+    font-weight: 500;
+    line-height: 1.5;
     color: var(--btn-font, var(--color-button-font));
     cursor: pointer;
     background-color: var(--color-button-background);
-    border: none;
-    border-radius: @form-radius;
+    border: 1px solid transparent;
+    border-radius: 7px;
     // outline: none;
-    transition: @transition-normal;
-    transition-property: background-color, opacity;
+    transition:
+      background-color 150ms,
+      border-color 150ms,
+      color 150ms,
+      opacity 150ms;
     &[disabled] {
       cursor: default;
       opacity: 0.4;
@@ -87,6 +92,16 @@
     &.outline,
     &.link {
       background-color: transparent;
+    }
+    &.outline {
+      border-color: var(--color-border);
+    }
+    &.outline:hover:not(:disabled) {
+      border-color: var(--color-font-label);
+    }
+    &.link,
+    &.icon {
+      border-color: transparent;
     }
 
     &:not(.link) {
@@ -124,7 +139,7 @@
       }
     }
     &.icontext {
-      gap: 2px;
+      gap: 6px;
     }
 
     // TODO: loading

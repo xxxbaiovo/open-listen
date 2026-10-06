@@ -4,6 +4,8 @@
   import { setMaximized } from '@/shared/browser/widnow.svelte'
   // import { link, location } from '@/plugins/routes'
   import { closeWindow } from '@/shared/ipc/app'
+  import { webWindow } from '@/shared/browser/minimized.svelte'
+  import { tick } from 'svelte'
   // import { isFullscreen } from '@/store'
 
   const fullscreenState = useIsFullscreen()
@@ -14,6 +16,19 @@
 </script>
 
 <div class="control">
+  <button
+    type="button"
+    class="btn min"
+    aria-label={$t('min')}
+    title={$t('min')}
+    onclick={async () => {
+      webWindow.minimized = true
+      await tick()
+      document.querySelector<HTMLButtonElement>('.mini-player .restore')?.focus()
+    }}
+  >
+    <svg viewBox="0 0 24 24" height="18" aria-hidden="true"><use xlink:href="#icon-window-minimize-2" /></svg>
+  </button>
   <!-- <a
     tabindex="0"
     role="button"

@@ -17,6 +17,9 @@ export const createExposeApp = (client: ClientCall) => {
     async fullscreen(event, isFullscreen) {
       return client.fullscreen(isFullscreen)
     },
+    async maximized(event, isMaximized) {
+      return client.maximized(isMaximized)
+    },
 
     async showMessageBox(event, key, extId, options) {
       return client.showMessageBox(key, extId, options)
@@ -62,6 +65,12 @@ export const createClientApp = (main: MainCall) => {
     },
     async minWindow() {
       return main.minWindow()
+    },
+    async maximizeWindow() {
+      return main.maximizeWindow()
+    },
+    async resizeWindow(phase, edge, origin) {
+      return main.resizeWindow(phase, edge, origin)
     },
     async closeWindow(isForce) {
       return main.closeWindow(isForce)

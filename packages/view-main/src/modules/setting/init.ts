@@ -5,10 +5,15 @@ import { createUnsubscriptionSet } from '@/shared'
 import { getSetting, registerRemoteSettingAction, updateSetting } from './store/action'
 import { initSetting as overwriteSetting } from './store/commit'
 import { settingEvent } from './store/event'
+import { normalizePlayback } from './retiredPlayback'
 
 const init = async () => {
-  const setting = await getSetting()
+  const savedSetting = await getSetting()
+  const setting = normalizePlayback(savedSetting)
   const newSetting = new Map<keyof AnyListen.AppSetting, unknown>()
+  for (const key of Object.keys(setting) as Array<keyof AnyListen.AppSetting>) {
+    if (setting[key] !== savedSetting[key]) newSetting.set(key, setting[key])
+  }
 
   if (!setting['common.langId'] || !i18n.availableLocales.includes(setting['common.langId'])) {
     const langId = getEnvLocale()

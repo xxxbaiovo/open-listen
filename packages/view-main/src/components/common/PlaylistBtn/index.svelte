@@ -1,84 +1,71 @@
 <script lang="ts">
-  import PopupBtn from '@/components/material/PopupBtn.svelte'
   import { t } from '@/plugins/i18n'
-  // import Header from './Header.svelte'
-  // import type { TabType } from './shared'
-  import QueueList from './QueueList.svelte'
-  import { tick } from 'svelte'
-
-  let render = $state(false)
-  // let activeTab = $state<TabType>('queue')
+  import { queuePanelOpen, toggleQueuePanel } from '@/shared/queuePanel'
 </script>
 
-<PopupBtn
-  height="32rem"
+<button
+  type="button"
+  class="queue-toggle"
+  class:active={$queuePanelOpen}
   aria-label={$t('player__list')}
-  onvisible={(visible) => {
-    void tick().then(() => {
-      render = visible
-    })
-  }}
+  title={$t('player__list')}
+  aria-expanded={$queuePanelOpen}
+  aria-controls="queue-panel"
+  onclick={(event) => toggleQueuePanel(event.currentTarget)}
 >
-  <div class="icon">
-    <svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 192 192">
-      <use xlink:href="#icon-playlist" />
-    </svg>
-  </div>
-  {#snippet content()}
-    <div class="container">
-      <!-- <Header bind:active={activeTab} /> -->
-      {#if render}
-        <!-- {#if activeTab == 'queue'} -->
-        <QueueList />
-        <!-- {:else} -->
-        <!-- {/if} -->
-      {/if}
-    </div>
-  {/snippet}
-</PopupBtn>
+  <span class="icon">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><use xlink:href="#icon-playlist" /></svg>
+  </span>
+  {#if $queuePanelOpen}<span class="active-dot" aria-hidden="true"></span>{/if}
+</button>
 
 <style lang="less">
-  // .container {
-  //   flex: none;
-  //   height: 100%;
-  // }
-
-  .icon {
+  .queue-toggle {
     position: relative;
-    display: flex;
-    flex-flow: column nowrap;
+    display: inline-flex;
+    flex: none;
     align-items: center;
-    // color: var(--color-button-font);
     justify-content: center;
-    width: 24px;
+    width: 32px;
+    height: 36px;
     padding: 0;
+    color: var(--color-font-label);
     cursor: pointer;
-    transition: color @transition-normal;
-
-    svg {
-      opacity: 0.5;
-      transition: @transition-fast;
-      transition-property: opacity, color;
-      // filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.2));
-    }
-    &:hover {
-      svg {
-        opacity: 0.9;
-      }
-    }
-    &:active {
-      svg {
-        opacity: 1;
-      }
-    }
+    background: transparent;
+    border: 0;
+    border-radius: 4px;
+    transition: color 120ms ease-out;
   }
-
-  .container {
+  .queue-toggle:hover {
+    color: var(--color-font);
+  }
+  .queue-toggle.active {
+    color: var(--color-primary);
+  }
+  .queue-toggle:focus-visible {
+    outline: 2px solid currentcolor;
+    outline-offset: 2px;
+  }
+  .icon {
     display: flex;
-    flex-flow: column nowrap;
-    gap: 10px;
-    width: 500px;
-    min-height: 300px;
-    max-height: 100%;
+    width: 20px;
+  }
+  svg {
+    width: 100%;
+    height: 100%;
+    fill: currentcolor;
+  }
+  .active-dot {
+    position: absolute;
+    bottom: 0;
+    width: var(--player-indicator-size, 4px);
+    height: var(--player-indicator-size, 4px);
+    background: currentcolor;
+    border-radius: 50%;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .queue-toggle {
+      transition: none;
+    }
   }
 </style>

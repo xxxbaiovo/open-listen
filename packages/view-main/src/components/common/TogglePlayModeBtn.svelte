@@ -1,140 +1,92 @@
 <script lang="ts">
-  import PopupBtn from '@/components/material/PopupBtn.svelte'
+  import SvgIcon from '@/components/base/SvgIcon.svelte'
   import { useNextTogglePlay } from '@/shared/compositions/useNextTogglePlay.svelte'
   import { t } from '@/plugins/i18n'
-  import { useSettingValue } from '@/modules/setting/reactive.svelte'
-  const togglePlayMethod = useSettingValue('player.togglePlayMethod')
-  let popup: PopupBtn
+  let { kind = 'all' }: { kind?: 'all' | 'shuffle' | 'repeat' } = $props()
 
   const nextTogglePlay = useNextTogglePlay()
+  const active = $derived(kind === 'shuffle' ? nextTogglePlay.shuffle
+    : kind === 'repeat' ? nextTogglePlay.repeat !== 'off' : nextTogglePlay.active)
+  const icon = $derived(kind === 'shuffle' ? 'list-random'
+    : kind === 'repeat' ? nextTogglePlay.repeat === 'one' ? 'list-single-loop' : 'list-loop' : nextTogglePlay.icon)
+  const name = $derived(kind === 'shuffle' ? $t(active ? 'ui.shuffle_off' : 'ui.shuffle_on')
+    : kind === 'repeat' ? $t(nextTogglePlay.repeat === 'off' ? 'ui.repeat_off'
+      : nextTogglePlay.repeat === 'one' ? 'player__play_toggle_mode_single_loop' : 'player__play_toggle_mode_list_loop') : nextTogglePlay.name)
 
-  const toggleMode = (mode: AnyListen.AppSetting['player.togglePlayMethod']) => {
-    popup.hide()
-    nextTogglePlay.toggleMode(mode)
+  const keepNativeActivation = (event: KeyboardEvent) => {
+    // The app-wide keyup handler prevents native Space activation on buttons.
+    if (event.key === ' ' || event.key === 'Enter') event.stopPropagation()
   }
 </script>
 
-<PopupBtn bind:this={popup} aria-label={nextTogglePlay.name}>
-  <div class="btn">
-    {#if togglePlayMethod.val == 'listLoop'}
-      <svg version="1.1" xmlns="http://www.w3.org/2000/svg" height="80%" viewBox="0 0 24 24">
-        <use xlink:href="#icon-list-loop" />
-      </svg>
-    {:else if togglePlayMethod.val == 'random'}
-      <svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 24 24">
-        <use xlink:href="#icon-list-random" />
-      </svg>
-    {:else if togglePlayMethod.val == 'singleLoop'}
-      <svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 24 24">
-        <use xlink:href="#icon-list-single-loop" />
-      </svg>
-    {:else if togglePlayMethod.val == 'list'}
-      <svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 24 24">
-        <use xlink:href="#icon-list-order" />
-      </svg>
-    {:else if togglePlayMethod.val == 'none'}
-      <svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 24 24">
-        <use xlink:href="#icon-unavailable" />
-      </svg>
-    {/if}
-  </div>
-  {#snippet content()}
-    <div class="setting">
-      <button
-        class="btn"
-        aria-label={$t('player__play_toggle_mode_list_loop')}
-        onclick={() => {
-          toggleMode('listLoop')
-        }}
-      >
-        <svg version="1.1" xmlns="http://www.w3.org/2000/svg" height="100%" viewBox="0 0 24 24">
-          <use xlink:href="#icon-list-loop" />
-        </svg>
-      </button>
-      <button
-        class="btn"
-        aria-label={$t('player__play_toggle_mode_random')}
-        onclick={() => {
-          toggleMode('random')
-        }}
-      >
-        <svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 24 24">
-          <use xlink:href="#icon-list-random" />
-        </svg>
-      </button>
-      <button
-        class="btn"
-        aria-label={$t('player__play_toggle_mode_list')}
-        onclick={() => {
-          toggleMode('list')
-        }}
-      >
-        <svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 32 32">
-          <use xlink:href="#icon-list-order" />
-        </svg>
-      </button>
-      <button
-        class="btn"
-        aria-label={$t('player__play_toggle_mode_single_loop')}
-        onclick={() => {
-          toggleMode('singleLoop')
-        }}
-      >
-        <svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 24 24">
-          <use xlink:href="#icon-list-single-loop" />
-        </svg>
-      </button>
-      <button
-        class="btn"
-        aria-label={$t('player__play_toggle_mode_none')}
-        onclick={() => {
-          toggleMode('none')
-        }}
-      >
-        <svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 24 24">
-          <use xlink:href="#icon-unavailable" />
-        </svg>
-      </button>
-    </div>
-  {/snippet}
-</PopupBtn>
+<button
+  type="button"
+  class="play-mode-button"
+  class:active
+  aria-label={name}
+  aria-pressed={active}
+  title={name}
+  onclick={kind === 'shuffle' ? nextTogglePlay.toggleShuffle : kind === 'repeat' ? nextTogglePlay.nextRepeat : nextTogglePlay.nextMode}
+  onkeydown={keepNativeActivation}
+  onkeyup={keepNativeActivation}
+>
+  <SvgIcon name={icon} />
+  {#if active}<span class="mode-indicator" aria-hidden="true"></span>{/if}
+</button>
 
 <style lang="less">
-  .btn {
+  .play-mode-button {
     position: relative;
-    display: flex;
-    flex-flow: column nowrap;
+    display: inline-flex;
     align-items: center;
-    // color: var(--color-button-font);
     justify-content: center;
-    width: 24px;
+    width: 36px;
+    height: 36px;
     padding: 0;
+    color: var(--color-font-label);
     cursor: pointer;
-    background-color: transparent;
-    border: none;
-    transition: color @transition-normal;
+    background: transparent;
+    border: 0;
+    border-radius: 50%;
+    transition:
+      color 120ms ease-out,
+      scale 120ms cubic-bezier(0.2, 0, 0, 1);
 
-    svg {
-      opacity: 0.5;
-      transition: opacity @transition-fast;
-      // filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.2));
-    }
     &:hover {
-      svg {
-        opacity: 0.9;
-      }
+      color: var(--color-font);
     }
+
+    &.active {
+      color: var(--color-primary);
+    }
+
     &:active {
-      svg {
-        opacity: 1;
-      }
+      scale: 0.96;
+    }
+
+    &:focus-visible {
+      outline: 2px solid currentcolor;
+      outline-offset: 2px;
     }
   }
 
-  .setting {
-    display: flex;
-    flex-flow: row nowrap;
-    gap: 10px;
-    font-size: 14px;
+  .mode-indicator {
+    position: absolute;
+    bottom: 2px;
+    width: var(--player-indicator-size, 4px);
+    height: var(--player-indicator-size, 4px);
+    pointer-events: none;
+    background: currentcolor;
+    border-radius: 50%;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .play-mode-button {
+      transition: none;
+
+      &:active {
+        scale: 1;
+      }
+    }
   }
 </style>

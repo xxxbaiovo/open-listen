@@ -6,10 +6,11 @@
   import Btn from '@/components/base/Btn.svelte'
   import { appState } from '@/modules/app/store/state'
   import Checkbox from '@/components/base/Checkbox.svelte'
+  import { listCreationCopy } from './copy'
 
   let {
     item,
-    targetId,
+    targetId
   }: {
     item?: AnyListen.List.LocalListInfo | null
     targetId?: AnyListen.List.ParentId
@@ -32,8 +33,8 @@
       posTime: 0,
       pic: '',
       songCount: 0,
-      syncTime: 0,
-    },
+      syncTime: 0
+    }
   }
   let listInfo = $state<AnyListen.List.LocalListInfo>(initData)
   let updateDeviceId = $state(true)
@@ -51,7 +52,7 @@
     listInfo = {
       ...initData,
       id: targetId || '',
-      meta: { ...initData.meta, deviceId: appState.machineId },
+      meta: { ...initData.meta, deviceId: appState.machineId }
     }
     updateDeviceId = true
   }
@@ -60,7 +61,7 @@
     if (item) {
       await editUserList({
         ...listInfo,
-        meta: updateDeviceId ? { ...listInfo.meta, deviceId: appState.machineId } : listInfo.meta,
+        meta: updateDeviceId ? { ...listInfo.meta, deviceId: appState.machineId } : listInfo.meta
       })
     } else {
       await createUserList({ ...listInfo, parentId: targetId || null })
@@ -71,7 +72,7 @@
     if (item) {
       listInfo = {
         ...item,
-        meta: { ...item.meta },
+        meta: { ...item.meta }
       }
       updateDeviceId = item.meta.deviceId === appState.machineId
     } else reset()
@@ -79,7 +80,15 @@
 </script>
 
 <main class="main">
-  <Input autofocus placeholder={$t('edit_list_modal__form_list_name')} bind:value={listInfo.name} />
+  <label class="name-field">
+    <span>{$t('edit_list_modal__form_list_name')}</span>
+    <Input
+      autofocus
+      aria-label={$t('edit_list_modal__form_list_name')}
+      placeholder={$t('edit_list_modal__form_list_name')}
+      bind:value={listInfo.name}
+    />
+  </label>
   {#if appState.machineId !== listInfo.meta.deviceId}
     <FormItem>
       <Checkbox
@@ -97,7 +106,7 @@
     </FormItem>
   {/if}
   <FormItem>
-    <p class="path code">{listInfo.meta.path}</p>
+    <p class="path code">{listInfo.meta.path || $t('edit_list_modal.local_list_form.path_empty')}</p>
     {#snippet right()}
       <Btn
         middle
@@ -123,53 +132,85 @@
     />
     <p class="tip">{$t('edit_list_modal.local_list_form.path_include_sub_dir_tip')}</p>
   </FormItem>
-  <FormItem>
-    <Checkbox
-      id="path_enabled_remove"
-      checked={listInfo.meta.enabledRemove || false}
-      onchange={(checked) => {
-        listInfo.meta.enabledRemove = checked
-      }}
-      label={$t('edit_list_modal.local_list_form.path_enabled_remove')}
-    />
-    <p class="tip">{$t('edit_list_modal.local_list_form.path_enabled_remove_tip')}</p>
-  </FormItem>
-  <FormItem>
-    <Checkbox
-      id="lazzy_parse_meta"
-      checked={listInfo.meta.lazzyParseMeta || false}
-      onchange={(checked) => {
-        listInfo.meta.lazzyParseMeta = checked
-      }}
-      label={$t('edit_list_modal.lazzy_parse_meta')}
-    />
-    <p class="tip">{$t('edit_list_modal.lazzy_parse_meta_tip')}</p>
-  </FormItem>
-  <FormItem>
-    <Checkbox
-      id="use_polling"
-      checked={listInfo.meta.usePolling || false}
-      onchange={(checked) => {
-        listInfo.meta.usePolling = checked
-      }}
-      label={$t('edit_list_modal.local_list_form.use_polling')}
-    />
-    <p class="tip">{$t('edit_list_modal.local_list_form.use_polling_tip')}</p>
-  </FormItem>
-  <FormItem>
-    <Checkbox
-      id="ignore_permission_errors"
-      checked={listInfo.meta.ignorePermissionErrors || false}
-      onchange={(checked) => {
-        listInfo.meta.ignorePermissionErrors = checked
-      }}
-      label={$t('edit_list_modal.local_list_form.ignore_permission_errors')}
-    />
-    <p class="tip">{$t('edit_list_modal.local_list_form.ignore_permission_errors_tip')}</p>
-  </FormItem>
+  <details class="advanced">
+    <summary>{$listCreationCopy.advanced}</summary>
+    <div class="advanced-content">
+      <FormItem>
+        <Checkbox
+          id="path_enabled_remove"
+          checked={listInfo.meta.enabledRemove || false}
+          onchange={(checked) => {
+            listInfo.meta.enabledRemove = checked
+          }}
+          label={$t('edit_list_modal.local_list_form.path_enabled_remove')}
+        />
+        <p class="tip">{$t('edit_list_modal.local_list_form.path_enabled_remove_tip')}</p>
+      </FormItem>
+      <FormItem>
+        <Checkbox
+          id="lazzy_parse_meta"
+          checked={listInfo.meta.lazzyParseMeta || false}
+          onchange={(checked) => {
+            listInfo.meta.lazzyParseMeta = checked
+          }}
+          label={$t('edit_list_modal.lazzy_parse_meta')}
+        />
+        <p class="tip">{$t('edit_list_modal.lazzy_parse_meta_tip')}</p>
+      </FormItem>
+      <FormItem>
+        <Checkbox
+          id="use_polling"
+          checked={listInfo.meta.usePolling || false}
+          onchange={(checked) => {
+            listInfo.meta.usePolling = checked
+          }}
+          label={$t('edit_list_modal.local_list_form.use_polling')}
+        />
+        <p class="tip">{$t('edit_list_modal.local_list_form.use_polling_tip')}</p>
+      </FormItem>
+      <FormItem>
+        <Checkbox
+          id="ignore_permission_errors"
+          checked={listInfo.meta.ignorePermissionErrors || false}
+          onchange={(checked) => {
+            listInfo.meta.ignorePermissionErrors = checked
+          }}
+          label={$t('edit_list_modal.local_list_form.ignore_permission_errors')}
+        />
+        <p class="tip">{$t('edit_list_modal.local_list_form.ignore_permission_errors_tip')}</p>
+      </FormItem>
+    </div>
+  </details>
 </main>
 
 <style lang="less">
+  .name-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 6px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .advanced {
+    margin-top: 6px;
+    border-top: 1px solid var(--color-border);
+  }
+  summary {
+    padding: 12px 0 4px;
+    color: var(--color-font-label);
+    font-size: 13px;
+    cursor: pointer;
+  }
+  summary:hover {
+    color: var(--color-font);
+  }
+  .advanced-content {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-top: 10px;
+  }
   .main {
     display: flex;
     // flex: auto;
