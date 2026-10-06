@@ -22,4 +22,4 @@ if (!process.argv.includes('--source-only')) {
   assert.equal(createHash('sha512').update(readFileSync(resolve('build', file))).digest('base64'), sha)
   assert.equal(yaml.match(/^version: (.+)$/m)?.[1]?.trim(), pkg.version)
 }
-console.log(`Open Listen ${pkg.version}: release checks passed`)
+console.log(`Any Listen ${pkg.version}: release checks passed`)

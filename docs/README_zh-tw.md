@@ -1,3 +1,9 @@
+# Any Listen
+
+本倉庫為 [Any Listen](https://github.com/any-listen/any-listen) 的非官方修改版，由本倉庫獨立維護。
+
+[GD 音乐台插件：安装与使用说明](https://github.com/Morpheus799/gdstudio-repo#readme)
+
 <p align="center"><a href="https://github.com/any-listen/any-listen"><img height="110" src="./images/header-logo.svg" alt="any-listen logo"></a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="https://github.com/any-listen/any-listen"><img height="86" src="./images/header-name.svg" alt="any-listen name"></a></p>
 
 <p align="center">一款跨平台的私人音樂播放服務</p>
@@ -19,7 +25,7 @@
 
 ## 桌面版
 
-前往 Release 下載最新版本並安裝即可：[https://github.com/any-listen/any-listen-desktop/releases](https://github.com/any-listen/any-listen-desktop/releases)
+前往 Release 下載最新版本並安裝即可：[https://github.com/xxxbaiovo/open-listen/releases](https://github.com/xxxbaiovo/open-listen/releases)
 
 ## 網頁版
 

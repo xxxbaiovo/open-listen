@@ -1,10 +1,18 @@
-# Open Listen
+# Any Listen
+
+**Unofficial modified version · 非官方修改版**
 
 A customized desktop music player based on [Any Listen](https://github.com/any-listen/any-listen).
 
 - [Download Windows x64 installer](https://github.com/xxxbaiovo/open-listen/releases/latest)
 - [Release and update guide](docs/OPEN_LISTEN_RELEASE.md)
-- Original license and attribution are retained. Icons and project presentation are being updated.
+- Original license and attribution are retained. This version is maintained independently of the original authors.
+
+## GD 音乐台插件
+
+[GD 音乐台插件项目 / 安装与使用说明](https://github.com/Morpheus799/gdstudio-repo#readme)
+
+这是第三方插件，由其作者独立维护。安装与更新请参考插件仓库说明。
 
 ---
 
@@ -29,7 +37,7 @@ This project is under active development and currently provides both a **Desktop
 
 ## Desktop Version
 
-Grab the latest release and install it from: [https://github.com/any-listen/any-listen-desktop/releases](https://github.com/any-listen/any-listen-desktop/releases)
+Grab the latest release and install it from: [https://github.com/xxxbaiovo/open-listen/releases](https://github.com/xxxbaiovo/open-listen/releases)
 
 ## Web Version
 

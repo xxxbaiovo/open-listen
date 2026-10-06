@@ -1,4 +1,4 @@
-name: Open Listen Windows Release
+name: Any Listen Windows Release
 
 on:
   push:
@@ -35,5 +35,5 @@ jobs:
         run: |
           $assets = @(Get-ChildItem build/*-x64-Setup.exe, build/*-x64-Setup.exe.blockmap, build/latest.yml | ForEach-Object FullName)
           $assets += (Resolve-Path packages/desktop/publish/version.json).Path
-          gh release create "$env:GITHUB_REF_NAME" @assets --verify-tag --draft --title "Open Listen $env:GITHUB_REF_NAME" --notes-file packages/desktop/publish/changeLog.md
+          gh release create "$env:GITHUB_REF_NAME" @assets --verify-tag --draft --title "Any Listen $env:GITHUB_REF_NAME" --notes-file packages/desktop/publish/changeLog.md
           if ($LASTEXITCODE -ne 0) { throw 'Release creation failed' }

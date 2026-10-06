@@ -53,7 +53,7 @@ const updateInfoUrl = 'https://github.com/xxxbaiovo/open-listen/releases/latest/
 export const getUpdateInfo = async (): Promise<AnyListen.UpdateInfo> => {
   const { body } = await request<Partial<AnyListen.UpdateInfo>>(updateInfoUrl)
   if (typeof body.version !== 'string' || !Array.isArray(body.history)) {
-    throw new Error('Invalid Open Listen update metadata')
+    throw new Error('Invalid Any Listen update metadata')
   }
   return body as AnyListen.UpdateInfo
 }
